@@ -43,8 +43,8 @@ class UDP:
             package[self.HEADER_LEN :],
         )
 
-    def send(self, type: int, data: bytes, seq: int, ack: int, rwnd: int, addr: tuple):
-        self.sock.sendto(self.pack(type, data, seq, ack), addr)
+    def send(self, type: config.Type, data: bytes, seq: int, ack: int, rwnd: int, addr: tuple):
+        self.sock.sendto(self.pack(type.value, data, seq, ack), addr)
 
     def recv(self):
         package, addr = self.sock.recvfrom(self.BUF_SIZE)
@@ -53,7 +53,7 @@ class UDP:
 addr = ('127.0.0.1',48001)
 sock = simsocket.SimSocket(1,address=addr)
 UDP = UDP(None)
-a = UDP.pack(1, b"", 1, 1)
+a = UDP.pack(type.IHAVE.value, b"", 1, 1)
 print(len(a[: struct.calcsize(headerType)]))
 print(len(a))
 

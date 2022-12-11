@@ -10,12 +10,12 @@ class Type(Enum):
     ACK = 4
     DENIED = 5
 
-class congestionStatus(Enum):
+class CongestionStatus(Enum):
     SLOW_START = 0
     CONGESTION_AVOIDANCE = 1
     FAST_RECOVERY = 2
 
-class event(Enum):
+class Event(Enum):
     NEW_ACK = 0
     TIMEOUT = 1
     DUP_ACK = 1
