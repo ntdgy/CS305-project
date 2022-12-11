@@ -5,7 +5,7 @@ import logging
 import socket
 import util.simsocket as simsocket
 from dataPack import UDP
-from config import CongestionStatus, Event
+from config import CongestionStatus, Event, Type, HEADER_LEN
 from typing import List, Tuple
 
 logging.basicConfig(
@@ -23,6 +23,7 @@ class Connection(UDP):
         super().__init__(sock)
         self.addr = addr
         self.data = data
+        self.dataPointer = 0
         self.dataLen = len(data)
         self.MSS = MSS
         self.SndBufferCapacity = int(65536 / self.MSS)
@@ -39,13 +40,68 @@ class Connection(UDP):
         self.ssthresh = 65536
         self.TimeStart = time.time()
         self.TimeoutInterval = 1.0
+        # [[SeqNum, Segment, Sent, Start Time]]
         self.SndBuffer = [
             [
                 self.NextByteFill,
+                super.pack(Type.DATA.value, b"", self.NextByteFill, 0, 0, 0),
+                False,
+                0,
             ]
         ]
+        self.NextByteFill += len(self.SndBuffer[0][1]) - HEADER_LEN
         self.sendList = []
         self.first = True
+
+    def fillSndBuffer(self):
+        if self.first == True:
+            self.SndBuffer.append(
+                [
+                    self.NextByteFill,
+                    super.pack(
+                        Type.DATA.value,
+                        str(self.dataLen).encode(),
+                        self.NextByteFill,
+                        0,
+                        0,
+                        0,
+                    ),
+                    False,
+                    time.time(),
+                ]
+            )
+            self.first = False
+            self.NextByteFill += len(self.SndBuffer[-1][1]) - HEADER_LEN
+        if len(self.SndBuffer) < self.SndBufferCapacity:
+            segment = self.data[self.dataPointer : self.dataPointer + self.MSS]
+            self.dataPointer += self.MSS
+            if len(segment) == 0:
+                # pack(self, type: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
+                self.SndBuffer.append(
+                    [
+                        self.NextByteFill,
+                        super.pack(
+                            Type.DATA.value,
+                            b"0",
+                            self.NextByteFill,
+                            0,
+                            2,
+                            0,
+                        ),
+                        False,
+                        time.time(),
+                    ]
+                )
+                return
+            self.SndBuffer.append(
+                [
+                    self.NextByteFill,
+                    super.pack(Type.DATA.value, segment, self.NextByteFill, 0, 0, 0),
+                    False,
+                    time.time(),
+                ]
+            )
+            self.NextByteFill += len(self.SndBuffer[-1][1]) - HEADER_LEN
 
     # if the package if ack
     def recvAckAndRwnd(self, ack: int, rwnd: int):
