@@ -1,5 +1,6 @@
 import sys
 import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import struct
 import socket
@@ -10,6 +11,7 @@ print(sys.path)
 
 type = config.Type
 headerType = config.headerType
+headerType = "HBBHHIIHI"
 
 
 class UDP:
@@ -21,7 +23,7 @@ class UDP:
         self.TEAM = config.TEAM
         self.sock = sock
 
-    def pack(self, type: int, data: bytes, seq: int, ack: int, rwnd: int = 0):
+    def pack(self, type: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
         return (
             struct.pack(
                 headerType,
@@ -29,9 +31,10 @@ class UDP:
                 self.TEAM,
                 type,
                 self.HEADER_LEN_PACKAGE,
-                self.HEADER_LEN + len(data),
+                socket.htons(self.HEADER_LEN + len(data)),
                 socket.htonl(seq),
                 socket.htonl(ack),
+                socket.htons(sf),
                 socket.htonl(rwnd),
             )
             + data
@@ -43,17 +46,31 @@ class UDP:
             package[self.HEADER_LEN :],
         )
 
-    def send(self, type: config.Type, data: bytes, seq: int, ack: int, rwnd: int, addr: tuple):
-        self.sock.sendto(self.pack(type.value, data, seq, ack), addr)
+    def send(
+        self,
+        type: config.Type,
+        data: bytes,
+        seq: int,
+        ack: int,
+        sf: int,
+        rwnd: int,
+        addr: tuple,
+    ):
+        self.sock.sendto(self.pack(type.value, data, seq, sf, ack, rwnd), addr)
 
     def recv(self):
         package, addr = self.sock.recvfrom(self.BUF_SIZE)
         header, data = self.unpack(package)
         return header, data, addr
-addr = ('127.0.0.1',48001)
-sock = simsocket.SimSocket(1,address=addr)
-UDP = UDP(None)
-a = UDP.pack(type.IHAVE.value, b"", 1, 1)
-print(len(a[: struct.calcsize(headerType)]))
-print(len(a))
 
+
+addr = ("127.0.0.1", 48001)
+sock = simsocket.SimSocket(1, address=addr)
+UDP = UDP(None)
+print(struct.calcsize(headerType))
+a = UDP.pack(type.IHAVE.value, b"1", 1, 1)
+print(a)
+header, data = UDP.unpack(a)
+print(header)
+socket.ntohl(header[6])
+print(data)
