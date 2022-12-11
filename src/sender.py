@@ -16,7 +16,7 @@ logging.basicConfig(
 logger = logging.getLogger()
 
 
-class Connection(UDP):
+class Sender(UDP):
     def __init__(
         self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1248
     ) -> None:
@@ -44,7 +44,7 @@ class Connection(UDP):
         self.SndBuffer = [
             [
                 self.NextByteFill,
-                super.pack(Type.DATA.value, b"", self.NextByteFill, 0, 0, 0),
+                super.pack(Type.DATA.value, b"", self.NextByteFill, 0, 1, 0),
                 False,
                 0,
             ]
@@ -105,7 +105,7 @@ class Connection(UDP):
     # if the package if ack
     def recvAckAndRwnd(self, ack: int, rwnd: int):
         # header, data = super().unpack(package)
-        # _, _, type, _, seq, ack, sf, rwnd = header
+        # _, _, type1, _, _, seq, ack, sf, rwnd = header
         # # seq = socket.ntohl(seq)
         # ack = socket.ntohl(ack)
         # # sf = socket.ntohs(sf)

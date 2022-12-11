@@ -6,12 +6,12 @@ import struct
 import socket
 import config
 import util.simsocket as simsocket
+from config import Type
 
 print(sys.path)
 
-type = config.Type
 headerType = config.headerType
-headerType = "HBBHHIIHI"
+# headerType = "HBBHHIIHI"
 
 
 class UDP:
@@ -23,13 +23,13 @@ class UDP:
         self.TEAM = config.TEAM
         self.sock = sock
 
-    def pack(self, type: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
+    def pack(self, type1: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
         return (
             struct.pack(
                 headerType,
                 self.MAGIC,
                 self.TEAM,
-                type,
+                type1,
                 self.HEADER_LEN_PACKAGE,
                 socket.htons(self.HEADER_LEN + len(data)),
                 socket.htonl(seq),
@@ -52,6 +52,9 @@ class UDP:
         addr: tuple,
     ):
         self.sock.sendto(package, addr)
+    
+    def sendSegment(self, type1: Type,data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0, addr: tuple = None):
+        self.send(self.pack(type1.value, data, seq, ack, sf, rwnd), addr)
 
     def recv(self):
         package, addr = self.sock.recvfrom(self.BUF_SIZE)
@@ -63,7 +66,7 @@ addr = ("127.0.0.1", 48001)
 sock = simsocket.SimSocket(1, address=addr)
 UDP = UDP(None)
 print(struct.calcsize(headerType))
-a = UDP.pack(type.IHAVE.value, b"1", 1, 1)
+a = UDP.pack(Type.IHAVE.value, b"1", 1, 1,1,1)
 print(a)
 header, data = UDP.unpack(a)
 print(header)

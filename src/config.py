@@ -1,5 +1,6 @@
 TEAM = 1
 headerType = "HBBHHIII"
+import struct
 HEADER_LEN = struct.calcsize(headerType)
 
 from enum import Enum
