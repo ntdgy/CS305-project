@@ -89,7 +89,6 @@ class Connection(UDP):
                             0,
                         ),
                         False,
-                        time.time(),
                     ]
                 )
                 return
@@ -211,13 +210,25 @@ class Connection(UDP):
 
     def slideWindow(self):
         for i in range(len(self.SndBuffer)):
-            pass
-
-    def countDown(self):
-        pass
+            if self.SndBuffer[i][2] == False and self.SndBuffer[i][0] - self.NextSeqNum <= min(self.rwnd, self.cwnd):
+                self.SndBuffer[i].append(time.time())
+                logger.info("Send: %d", self.SndBuffer[i][0])
+                super().send(self.SndBuffer[i][1], self.addr)
+                self.TimeStart = time.time()
+                self.SndBuffer[i][2] = True
+            elif self.sndBuffer[i][2] == True:
+                break
+                
 
     def retranmission(self):
-        pass
+        for segment in self.SndBuffer:
+            if segment[0] == self.NextSeqNum:
+                segment[3] = time.time()
+                super().send(segment[1], self.addr)
+                logger.info("Retranmission: %d", segment[0])
+                self.TimeStart = time.time()
+                break
+
 
     def send(self, type: config.Type, data: bytes) -> None:
         self.sendList.append((time.time(), self.NextSeqNum, data))

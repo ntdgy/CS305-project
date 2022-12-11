@@ -48,15 +48,10 @@ class UDP:
 
     def send(
         self,
-        type: config.Type,
-        data: bytes,
-        seq: int,
-        ack: int,
-        sf: int,
-        rwnd: int,
+        package: bytes,
         addr: tuple,
     ):
-        self.sock.sendto(self.pack(type.value, data, seq, sf, ack, rwnd), addr)
+        self.sock.sendto(package, addr)
 
     def recv(self):
         package, addr = self.sock.recvfrom(self.BUF_SIZE)
