@@ -1,9 +1,10 @@
 TEAM = 1
-headerType = "HBBHHIII"
+headerType = "HBBHHIIBI"
 import struct
 HEADER_LEN = struct.calcsize(headerType)
 
 from enum import Enum
+
 class Type(Enum):
     WHOHAS = 0
     IHAVE = 1

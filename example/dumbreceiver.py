@@ -9,6 +9,8 @@ import util.bt_utils as bt_utils
 import hashlib
 import argparse
 import pickle
+import sender
+from typing import List, Set, Dict, Tuple
 
 """
 This is an example on how to use the provided skeleton code.
@@ -125,9 +127,11 @@ def peer_run(config):
     addr = (config.ip, config.port)
     sock = simsocket.SimSocket(config.identity, addr, verbose=config.verbose)
 
+    senders : List[src.connectiong.sender] = list()
     try:
         while True:
             ready = select.select([sock, sys.stdin],[],[], 0.1)
+            
             read_ready = ready[0]
             if len(read_ready) > 0:
                 if sock in read_ready:

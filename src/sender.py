@@ -1,3 +1,7 @@
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import random
 import config
 import time
@@ -18,7 +22,12 @@ logger = logging.getLogger()
 
 class Sender(UDP):
     def __init__(
-        self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1248
+        # self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1248
+        self,
+        sock: socket,
+        addr: tuple,
+        data: bytes,
+        MSS: int = 1248,
     ) -> None:
         super().__init__(sock)
         self.addr = addr
@@ -35,16 +44,20 @@ class Sender(UDP):
         self.EstimatedRTT = 1.0
         self.progress = 1
         self.DevRTT = 0
-        self.congestionStatus = CongestionStatus.SlowStart
+        self.congestionStatus = CongestionStatus.SLOW_START
         self.cwnd = MSS
         self.ssthresh = 65536
         self.TimeStart = time.time()
         self.TimeoutInterval = 1.0
+        
+        # get super class's function
+        print(super().pack)
+
         # [[SeqNum, Segment, Sent, Start Time]]
         self.SndBuffer = [
             [
                 self.NextByteFill,
-                super.pack(Type.DATA.value, b"", self.NextByteFill, 0, 1, 0),
+                super().pack(Type.DATA.value, data=b"", seq=self.NextByteFill, ack=0, sf=1, rwnd=0),
                 False,
                 0,
             ]
@@ -148,7 +161,7 @@ class Sender(UDP):
         oldStatus = self.congestionStatus
         if event == Event.NEW_ACK:
             self.duplicateAck = 0
-            if self.congestionStatus == CongestionStatus.SlowStart:
+            if self.congestionStatus == CongestionStatus.SLOW_START:
                 self.cwnd += self.MSS
             elif self.congestionStatus == CongestionStatus.CongestionAvoidance:
                 self.cwnd += self.MSS * self.MSS / self.cwnd
@@ -161,17 +174,17 @@ class Sender(UDP):
         elif event == Event.TIMEOUT:
             self.duplicateAck = 0
             self.retranmission()
-            if self.congestionStatus == CongestionStatus.SlowStart:
+            if self.congestionStatus == CongestionStatus.SLOW_START:
                 self.ssthresh = self.cwnd // 2
                 self.cwnd = self.MSS
             elif self.congestionStatus == CongestionStatus.CongestionAvoidance:
                 self.ssthresh = self.cwnd / 2
                 self.cwnd = self.MSS
-                self.congestionStatus = CongestionStatus.SlowStart
+                self.congestionStatus = CongestionStatus.SLOW_START
             elif self.congestionStatus == CongestionStatus.FastRecovery:
                 self.ssthresh = self.cwnd / 2
                 self.cwnd = self.MSS
-                self.congestionStatus = CongestionStatus.SlowStart
+                self.congestionStatus = CongestionStatus.SLOW_START
             else:
                 logger.error("Unknown Congestion Status")
                 raise Exception("Unknown Congestion Status")
@@ -179,7 +192,7 @@ class Sender(UDP):
             self.duplicateAck += 1
             if self.duplicateAck == 3:
                 self.retranmission()
-                if self.congestionStatus == CongestionStatus.SlowStart:
+                if self.congestionStatus == CongestionStatus.SLOW_START:
                     self.ssthresh = self.cwnd / 2
                     self.cwnd = self.ssthresh + 3
                     self.congestionStatus = CongestionStatus.CONGESTION_AVOIDANCE
@@ -210,7 +223,9 @@ class Sender(UDP):
 
     def slideWindow(self):
         for i in range(len(self.SndBuffer)):
-            if self.SndBuffer[i][2] == False and self.SndBuffer[i][0] - self.NextSeqNum <= min(self.rwnd, self.cwnd):
+            if self.SndBuffer[i][2] == False and self.SndBuffer[i][
+                0
+            ] - self.NextSeqNum <= min(self.rwnd, self.cwnd):
                 self.SndBuffer[i].append(time.time())
                 logger.info("Send: %d", self.SndBuffer[i][0])
                 super().send(self.SndBuffer[i][1], self.addr)
@@ -218,7 +233,6 @@ class Sender(UDP):
                 self.SndBuffer[i][2] = True
             elif self.sndBuffer[i][2] == True:
                 break
-                
 
     def retranmission(self):
         for segment in self.SndBuffer:
@@ -228,7 +242,6 @@ class Sender(UDP):
                 logger.info("Retranmission: %d", segment[0])
                 self.TimeStart = time.time()
                 break
-
 
     def send(self, type: config.Type, data: bytes) -> None:
         self.sendList.append((time.time(), self.NextSeqNum, data))
