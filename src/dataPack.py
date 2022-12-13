@@ -63,5 +63,13 @@ class UDP:
         return header, data, addr
 
 # UDP=UDP(None)
-# a = UDP.pack(1, b"123", 1, 1, 1, 1)
-# print(a)
+# # a = UDP.pack(1, b"123", 1, 1, 1, 1)
+# # print(a)
+# data = b'\xccQ\x01\x03\x00\x15\x00\x16\x00\xa0\x046\x00\x00\x00\x00\x02\x00\x00\x00\x000'
+# header, data = UDP.unpack(data)
+# print(header)
+# print(data)
+# data = b'\xccQ\x01\x03\x00\x15\x00\x16\x00\xa0\tZ\x00\x00\x00\x00\x02\x00\x00\x00\x000'
+# header, data = UDP.unpack(data)
+# print(header)
+# print(data)

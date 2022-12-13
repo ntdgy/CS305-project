@@ -49,6 +49,7 @@ class Sender(UDP):
         self.ssthresh = 65536
         self.TimeStart = time.time()
         self.TimeoutInterval = 1.0
+        self.end = False
 
         # [[SeqNum, Segment, Sent, Start Time]]
         self.SndBuffer = [
@@ -69,12 +70,12 @@ class Sender(UDP):
                 [
                     self.NextByteFill,
                     super().pack(
-                        Type.DATA.value,
-                        str(self.dataLen).encode(),
-                        self.NextByteFill,
-                        0,
-                        0,
-                        0,
+                        type1=Type.DATA.value,
+                        data=str(self.dataLen).encode(),
+                        seq=self.NextByteFill,
+                        ack=0,
+                        sf=0,
+                        rwnd=0,
                     ),
                     False,
                     time.time(),
@@ -87,6 +88,10 @@ class Sender(UDP):
             self.dataPointer += self.MSS
             if len(segment) == 0:
                 # pack(self, type: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
+                if self.end:
+                    return
+                self.end = True
+                logger.error("End11111111111")
                 self.SndBuffer.append(
                     [
                         self.NextByteFill,
@@ -99,13 +104,14 @@ class Sender(UDP):
                             rwnd=0,
                         ),
                         False,
+                        time.time(),
                     ]
                 )
                 return
             self.SndBuffer.append(
                 [
                     self.NextByteFill,
-                    super().pack(Type.DATA.value, segment, self.NextByteFill, 0, 0, 0),
+                    super().pack(type1=Type.DATA.value,data= segment,seq= self.NextByteFill,ack= 0,sf= 0,rwnd= 0),
                     False,
                     time.time(),
                 ]
@@ -140,9 +146,10 @@ class Sender(UDP):
             while len(self.SndBuffer) and self.SndBuffer[0][0] < self.NextSeqNum:
                 self.updateTimeOutInterval(self.SndBuffer[0][3])
                 s = self.SndBuffer.pop(0)
-                if (len(self.SndBuffer)) == 0 and super().unpack(s[1])[6] == 2:
+                if (len(self.SndBuffer)) == 0 and super().unpack(s[1])[0][7] == 2:
                     logger.info("Finish")
                     logger.info("Time: %f", time.time() - self.TimeStart)
+
             self.rwnd = rwnd
             self.TimeStart = time.time()
 
@@ -240,9 +247,9 @@ class Sender(UDP):
                 self.TimeStart = time.time()
                 break
 
-    def send(self, type1: config.Type, data: bytes) -> None:
-        self.sendList.append((time.time(), self.NextSeqNum, data))
-        self.NextSeqNum += len(data)
-        self.NextByteFill += len(data)
-        self.SndBuffer.append([self.NextByteFill, data])
-        super().sendSegment(type1=type1, data = data, seq=self.NextSeqNum, ack=0,sf=0,rwnd= self.rwnd, addr=self.addr)
+    # def send(self, type1: config.Type, data: bytes) -> None:
+    #     self.sendList.append((time.time(), self.NextSeqNum, data))
+    #     self.NextSeqNum += len(data)
+    #     self.NextByteFill += len(data)
+    #     self.SndBuffer.append([self.NextByteFill, data])
+    #     super().sendSegment(type1=type1, data=data, seq=self.NextSeqNum, ack=0, sf=0, rwnd=self.rwnd, addr=self.addr)

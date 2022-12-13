@@ -55,13 +55,13 @@ class Receiver(UDP):
                 # print("NextSeqNum2: ", self.NextSeqNum)
                 self.lastTime = time.time()
             else:
-                progress = self.progress
-                while self.count * self.MSS / self.dataLen >= self.progress * 0.05:
-                    self.progress += 1
-                if self.progress > progress:
-                    logger.info(f"Progress: {self.progress * 5}%")
-                    speed = self.count / (time.time() - self.lastTime)
-                    logger.info(f"Speed: {speed} bytes/s")
+                # progress = self.progress
+                # while self.count * self.MSS / self.dataLen >= self.progress * 0.05:
+                #     self.progress += 1
+                # if self.progress > progress:
+                #     logger.info(f"Progress: {self.progress * 5}%")
+                #     speed = self.count / (time.time() - self.lastTime)
+                #     logger.info(f"Speed: {speed} bytes/s")
                 i = 0
                 while i < len(self.RcvBuffer) and self.RcvBuffer[i][0] < seqNum:
                     i += 1
