@@ -50,9 +50,6 @@ class Sender(UDP):
         self.TimeStart = time.time()
         self.TimeoutInterval = 1.0
 
-        # get super class's function
-        print(super().pack)
-
         # [[SeqNum, Segment, Sent, Start Time]]
         self.SndBuffer = [
             [
@@ -95,11 +92,11 @@ class Sender(UDP):
                         self.NextByteFill,
                         super().pack(
                             Type.DATA.value,
-                            b"0",
-                            self.NextByteFill,
-                            0,
-                            2,
-                            0,
+                            data=b"0",
+                            seq=self.NextByteFill,
+                            ack=0,
+                            sf=2,
+                            rwnd=0,
                         ),
                         False,
                     ]
@@ -157,6 +154,8 @@ class Sender(UDP):
 
     def switchCongestionStatus(self, event: Event):
         oldStatus = self.congestionStatus
+        if event == Event.TIMEOUT:
+            return
         if event == Event.NEW_ACK:
             self.duplicateAck = 0
             if self.congestionStatus == CongestionStatus.SLOW_START:

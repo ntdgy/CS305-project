@@ -45,47 +45,43 @@ class Receiver(UDP):
         # sf = socket.ntohs(sf)
         if sf == 1:
             self.NextSeqNum = seq + len(data)
+            # print("NextSeqNum1: ", self.NextSeqNum)
         elif len(self.RcvBuffer) < self.RcvBufferCapacity and seqNum >= self.NextSeqNum:
             if self.first == True:
                 self.first = False
                 self.dataLen = int(data.decode())
                 logger.info(f"Data length: {self.dataLen}")
                 self.NextSeqNum = seq + len(data)
+                # print("NextSeqNum2: ", self.NextSeqNum)
                 self.lastTime = time.time()
             else:
                 progress = self.progress
                 while self.count * self.MSS / self.dataLen >= self.progress * 0.05:
                     self.progress += 1
-                if self.progress != progress:
+                if self.progress > progress:
                     logger.info(f"Progress: {self.progress * 5}%")
                     speed = self.count / (time.time() - self.lastTime)
                     logger.info(f"Speed: {speed} bytes/s")
                 i = 0
                 while i < len(self.RcvBuffer) and self.RcvBuffer[i][0] < seqNum:
                     i += 1
-                if (
-                        len(self.RcvBuffer) == 0
-                        or i == len(self.RcvBuffer)
-                        or self.RcvBuffer[i][0] != seqNum
-                ):
+                if len(self.RcvBuffer) == 0 or i == len(self.RcvBuffer) or self.RcvBuffer[i][0] != seqNum:
                     self.RcvBuffer.insert(i, (seqNum, data, sf))
-                    i = 0
-                    while (
-                            i < len(self.RcvBuffer)
-                            and self.NextSeqNum == self.RcvBuffer[i][0]
-                    ):
-                        self.NextSeqNum += len(self.RcvBuffer[i][1])
-                        if self.RcvBuffer[i][2] == 2:
-                            finishFlag = True
-                            logger.info("Finish flag received")
-                        else:
-                            self.data += self.RcvBuffer[i][1]
-                            self.count += 1
-                        i += 1
-                    self.RcvBuffer = self.RcvBuffer[i:]
-                    if len(self.RcvBuffer) == self.RcvBufferCapacity:
-                        self.RcvBuffer.pop(0)
-        rwnd = self.RcvBufferCapacity - len(self.RcvBuffer) * self.MSS
+                i = 0
+                while i < len(self.RcvBuffer) and self.NextSeqNum == self.RcvBuffer[i][0]:
+                    self.NextSeqNum += len(self.RcvBuffer[i][1])
+                    # print("NextSeqNum3: ", self.NextSeqNum)
+                    if self.RcvBuffer[i][2] == 2:
+                        finishFlag = True
+                        logger.info("Finish flag received")
+                    else:
+                        self.data += self.RcvBuffer[i][1]
+                        self.count += 1
+                    i += 1
+                self.RcvBuffer = self.RcvBuffer[i:]
+                if len(self.RcvBuffer) == self.RcvBufferCapacity:
+                    self.RcvBuffer.pop(0)
+        rwnd = (self.RcvBufferCapacity - len(self.RcvBuffer)) * self.MSS
         super().sendSegment(
             Type.ACK,
             data=b"",

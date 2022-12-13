@@ -19,8 +19,12 @@ if __name__ == '__main__':
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("127.0.0.1", 40001))
     while True:
-        data, addr = sock.recvfrom(receiver.MSS+20)
-        print(data)
+        data, addr = sock.recvfrom(receiver.MSS+21)
+        # print(data)
         header, data = receiver.unpack(data)
-        receiver.rcvSegment(header, data)
+        # print(header)
+        if receiver.rcvSegment(header, data):
+            break
+    with open("test1.txt", "wb") as f:
+        f.write(receiver.data)
 

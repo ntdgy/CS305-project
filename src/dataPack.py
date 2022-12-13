@@ -9,7 +9,6 @@ import util.simsocket as simsocket
 from config import Type
 
 
-
 class UDP:
     # def __init__(self, sock: simsocket) -> None:
     def __init__(self, sock: None) -> None:
@@ -22,44 +21,46 @@ class UDP:
 
     def pack(self, type1: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
         a = (
-            struct.pack(
-                config.headerType,
-                self.MAGIC,
-                self.TEAM,
-                type1,
-                struct.calcsize(config.headerType),
-                self.HEADER_LEN + len(data),
-                seq,
-                ack,
-                sf,
-                rwnd,
-            )
-            + data
+                struct.pack(
+                    config.headerType,
+                    self.MAGIC,
+                    self.TEAM,
+                    type1,
+                    struct.calcsize(config.headerType),
+                    self.HEADER_LEN + len(data),
+                    seq,
+                    ack,
+                    sf,
+                    rwnd,
+                )
+                + data
         )
         return a
 
     def unpack(self, package: bytes):
         return (
             struct.unpack(config.headerType, package[: self.HEADER_LEN]),
-            package[self.HEADER_LEN :],
+            package[self.HEADER_LEN:],
         )
 
     def send(
-        self,
-        package: bytes,
-        addr: tuple,
+            self,
+            package: bytes,
+            addr: tuple,
     ):
         self.sock.sendto(package, addr)
-    
-    def sendSegment(self, type1: Type,data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0, addr: tuple = None):
-        print("sendSegment")
+
+    def sendSegment(self, type1: Type, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0, addr: tuple = None):
+        # print("sendSegment")
+        # print(type1, data, seq, ack, sf, rwnd, addr)
+        if rwnd < 0:
+            rwnd = 0
         self.send(self.pack(type1.value, data, seq, ack, sf, rwnd), addr)
 
     def recv(self):
         package, addr = self.sock.recvfrom(self.BUF_SIZE)
         header, data = self.unpack(package)
         return header, data, addr
-
 
 # UDP=UDP(None)
 # a = UDP.pack(1, b"123", 1, 1, 1, 1)
