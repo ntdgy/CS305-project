@@ -1,5 +1,5 @@
 TEAM = 1
-headerType = "HBBHHIIBI"
+headerType = ">HBBHHIIBI"
 import struct
 HEADER_LEN = struct.calcsize(headerType)
 

@@ -22,12 +22,12 @@ logger = logging.getLogger()
 
 class Sender(UDP):
     def __init__(
-        # self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1248
-        self,
-        sock: socket,
-        addr: tuple,
-        data: bytes,
-        MSS: int = 1248,
+            # self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1248
+            self,
+            sock: socket.socket,
+            addr: tuple,
+            data: bytes,
+            MSS: int = 1248,
     ) -> None:
         super().__init__(sock)
         self.addr = addr
@@ -49,7 +49,7 @@ class Sender(UDP):
         self.ssthresh = 65536
         self.TimeStart = time.time()
         self.TimeoutInterval = 1.0
-        
+
         # get super class's function
         print(super().pack)
 
@@ -71,7 +71,7 @@ class Sender(UDP):
             self.SndBuffer.append(
                 [
                     self.NextByteFill,
-                    super.pack(
+                    super().pack(
                         Type.DATA.value,
                         str(self.dataLen).encode(),
                         self.NextByteFill,
@@ -86,14 +86,14 @@ class Sender(UDP):
             self.first = False
             self.NextByteFill += len(self.SndBuffer[-1][1]) - HEADER_LEN
         if len(self.SndBuffer) < self.SndBufferCapacity:
-            segment = self.data[self.dataPointer : self.dataPointer + self.MSS]
+            segment = self.data[self.dataPointer: self.dataPointer + self.MSS]
             self.dataPointer += self.MSS
             if len(segment) == 0:
                 # pack(self, type: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
                 self.SndBuffer.append(
                     [
                         self.NextByteFill,
-                        super.pack(
+                        super().pack(
                             Type.DATA.value,
                             b"0",
                             self.NextByteFill,
@@ -108,7 +108,7 @@ class Sender(UDP):
             self.SndBuffer.append(
                 [
                     self.NextByteFill,
-                    super.pack(Type.DATA.value, segment, self.NextByteFill, 0, 0, 0),
+                    super().pack(Type.DATA.value, segment, self.NextByteFill, 0, 0, 0),
                     False,
                     time.time(),
                 ]
@@ -130,7 +130,7 @@ class Sender(UDP):
             self.switchCongestionStatus(Event.NEW_ACK)
             progress = self.progress
             while (
-                self.NextSeqNum - self.initSeqNum
+                    self.NextSeqNum - self.initSeqNum
             ) / self.dataLen >= self.progress * 0.05:
                 self.progress += 1
             if progress < self.progress:
@@ -143,9 +143,7 @@ class Sender(UDP):
             while len(self.SndBuffer) and self.SndBuffer[0][0] < self.NextSeqNum:
                 self.updateTimeOutInterval(self.SndBuffer[0][3])
                 s = self.SndBuffer.pop(0)
-                if (len(self.SndBuffer)) == 0 and socket.ntohs(
-                    super.unpack(s[1])[6]
-                ) == 2:
+                if (len(self.SndBuffer)) == 0 and super().unpack(s[1])[6] == 2:
                     logger.info("Finish")
                     logger.info("Time: %f", time.time() - self.TimeStart)
             self.rwnd = rwnd
@@ -163,11 +161,11 @@ class Sender(UDP):
             self.duplicateAck = 0
             if self.congestionStatus == CongestionStatus.SLOW_START:
                 self.cwnd += self.MSS
-            elif self.congestionStatus == CongestionStatus.CongestionAvoidance:
+            elif self.congestionStatus == CongestionStatus.CONGESTION_AVOIDANCE:
                 self.cwnd += self.MSS * self.MSS / self.cwnd
-            elif self.congestionStatus == CongestionStatus.FastRecovery:
+            elif self.congestionStatus == CongestionStatus.FAST_RECOVERY:
                 self.cwnd = self.ssthresh
-                self.congestionStatus = CongestionStatus.CongestionAvoidance
+                self.congestionStatus = CongestionStatus.CONGESTION_AVOIDANCE
             else:
                 logger.error("Unknown Congestion Status")
                 raise Exception("Unknown Congestion Status")
@@ -177,11 +175,11 @@ class Sender(UDP):
             if self.congestionStatus == CongestionStatus.SLOW_START:
                 self.ssthresh = self.cwnd // 2
                 self.cwnd = self.MSS
-            elif self.congestionStatus == CongestionStatus.CongestionAvoidance:
+            elif self.congestionStatus == CongestionStatus.CONGESTION_AVOIDANCE:
                 self.ssthresh = self.cwnd / 2
                 self.cwnd = self.MSS
                 self.congestionStatus = CongestionStatus.SLOW_START
-            elif self.congestionStatus == CongestionStatus.FastRecovery:
+            elif self.congestionStatus == CongestionStatus.FAST_RECOVERY:
                 self.ssthresh = self.cwnd / 2
                 self.cwnd = self.MSS
                 self.congestionStatus = CongestionStatus.SLOW_START
@@ -196,11 +194,11 @@ class Sender(UDP):
                     self.ssthresh = self.cwnd / 2
                     self.cwnd = self.ssthresh + 3
                     self.congestionStatus = CongestionStatus.CONGESTION_AVOIDANCE
-                elif self.congestionStatus == CongestionStatus.CongestionAvoidance:
+                elif self.congestionStatus == CongestionStatus.CONGESTION_AVOIDANCE:
                     self.ssthresh = self.cwnd / 2
                     self.cwnd = self.ssthresh + 3
                     self.congestionStatus = CongestionStatus.CONGESTION_AVOIDANCE
-                elif self.congestionStatus == CongestionStatus.FastRecovery:
+                elif self.congestionStatus == CongestionStatus.FAST_RECOVERY:
                     pass
                 else:
                     logger.error("Unknown Congestion Status")
@@ -209,7 +207,7 @@ class Sender(UDP):
             logger.error("Unknown Event")
             raise Exception("Unknown Event")
         if self.cwnd > self.ssthresh:
-            self.congestionStatus = CongestionStatus.CongestionAvoidance
+            self.congestionStatus = CongestionStatus.CONGESTION_AVOIDANCE
         if oldStatus != self.congestionStatus:
             logger.info(
                 "Congestion Status Changed from %s to %s",
@@ -231,7 +229,7 @@ class Sender(UDP):
                 super().send(self.SndBuffer[i][1], self.addr)
                 self.TimeStart = time.time()
                 self.SndBuffer[i][2] = True
-            elif self.sndBuffer[i][2] == True:
+            elif self.SndBuffer[i][2] == True:
                 break
 
     def retranmission(self):
@@ -243,9 +241,9 @@ class Sender(UDP):
                 self.TimeStart = time.time()
                 break
 
-    def send(self, type: config.Type, data: bytes) -> None:
+    def send(self, type1: config.Type, data: bytes) -> None:
         self.sendList.append((time.time(), self.NextSeqNum, data))
         self.NextSeqNum += len(data)
         self.NextByteFill += len(data)
         self.SndBuffer.append([self.NextByteFill, data])
-        super().send(type, data, self.NextSeqNum, 0, self.rwnd, self.addr)
+        super().sendSegment(type1=type1, data = data, seq=self.NextSeqNum, ack=0,sf=0,rwnd= self.rwnd, addr=self.addr)

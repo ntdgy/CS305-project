@@ -22,7 +22,7 @@ logger = logging.getLogger()
 
 class Receiver(UDP):
     def __init__(self, sock: simsocket, addr: tuple, Mss: int = 1248) -> None:
-        super().__init__(sock)
+        super().__init__(sock=sock)
         self.finished = False
         self.addr = addr
         self.MSS = Mss
@@ -41,8 +41,8 @@ class Receiver(UDP):
     def rcvSegment(self, header: tuple, data: bytes) -> bool:
         finishFlag = False
         _, _, type1, _, _, seq, ack, sf, rwnd = header
-        seqNum = socket.ntohl(seq)
-        sf = socket.ntohs(sf)
+        seqNum = seq
+        # sf = socket.ntohs(sf)
         if sf == 1:
             self.NextSeqNum = seq + len(data)
         elif len(self.RcvBuffer) < self.RcvBufferCapacity and seqNum >= self.NextSeqNum:
@@ -64,15 +64,15 @@ class Receiver(UDP):
                 while i < len(self.RcvBuffer) and self.RcvBuffer[i][0] < seqNum:
                     i += 1
                 if (
-                    len(self.RcvBuffer) == 0
-                    or i == len(self.RcvBuffer)
-                    or self.RcvBuffer[i][0] != seqNum
+                        len(self.RcvBuffer) == 0
+                        or i == len(self.RcvBuffer)
+                        or self.RcvBuffer[i][0] != seqNum
                 ):
                     self.RcvBuffer.insert(i, (seqNum, data, sf))
                     i = 0
                     while (
-                        i < len(self.RcvBuffer)
-                        and self.NextSeqNum == self.RcvBuffer[i][0]
+                            i < len(self.RcvBuffer)
+                            and self.NextSeqNum == self.RcvBuffer[i][0]
                     ):
                         self.NextSeqNum += len(self.RcvBuffer[i][1])
                         if self.RcvBuffer[i][2] == 2:

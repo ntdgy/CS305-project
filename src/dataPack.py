@@ -15,27 +15,28 @@ class UDP:
     def __init__(self, sock: None) -> None:
         self.HEADER_LEN = struct.calcsize(config.headerType)
         self.BUF_SIZE = 1400
-        self.MAGIC = socket.htons(52305)
+        self.MAGIC = 52305
         self.TEAM = config.TEAM
         # self.sock = sock
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def pack(self, type1: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
-        return (
+        a = (
             struct.pack(
                 config.headerType,
                 self.MAGIC,
                 self.TEAM,
                 type1,
-                socket.htons(struct.calcsize(config.headerType)),
-                socket.htons(self.HEADER_LEN + len(data)),
-                socket.htonl(seq),
-                socket.htonl(ack),
-                socket.htons(sf),
-                socket.htonl(rwnd),
+                struct.calcsize(config.headerType),
+                self.HEADER_LEN + len(data),
+                seq,
+                ack,
+                sf,
+                rwnd,
             )
             + data
         )
+        return a
 
     def unpack(self, package: bytes):
         return (
@@ -51,6 +52,7 @@ class UDP:
         self.sock.sendto(package, addr)
     
     def sendSegment(self, type1: Type,data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0, addr: tuple = None):
+        print("sendSegment")
         self.send(self.pack(type1.value, data, seq, ack, sf, rwnd), addr)
 
     def recv(self):
@@ -59,13 +61,6 @@ class UDP:
         return header, data, addr
 
 
-# addr = ("127.0.0.1", 48001)
-# sock = simsocket.SimSocket(1, address=addr)
-# UDP = UDP(None)
-# print(struct.calcsize(headerType))
-# a = UDP.pack(Type.IHAVE.value, b"1", 1, 1,1,1)
+# UDP=UDP(None)
+# a = UDP.pack(1, b"123", 1, 1, 1, 1)
 # print(a)
-# header, data = UDP.unpack(a)
-# print(header)
-# socket.ntohl(header[6])
-# print(data)
