@@ -41,7 +41,7 @@ class Receiver(UDP):
     def rcvSegment(self, header: tuple, data: bytes) -> bool:
         finishFlag = False
         _, _, type1, _, _, seq, ack, sf, rwnd = header
-        logger.info("Recv: seq: %d, ack: %d, len: %d", seq, ack, len(data))
+        # logger.info("Recv: seq: %d, ack: %d, len: %d", seq, ack, len(data))
         if sf == 1:
             self.next_expected_seq = seq + len(data)
             self.first = True
@@ -68,7 +68,10 @@ class Receiver(UDP):
                 if len(self.RcvBuffer) == 0 or i == len(self.RcvBuffer) or self.RcvBuffer[i][0] != seq:
                     self.RcvBuffer.insert(i, (seq, data, sf))
                 i = 0
-                while i < len(self.RcvBuffer) and self.next_expected_seq == self.RcvBuffer[i][0]:
+                while i < len(self.RcvBuffer):  # and self.next_expected_seq == self.RcvBuffer[i][0]:
+                    if self.next_expected_seq != self.RcvBuffer[i][0]:
+                        self.fastRetransmit(self.next_expected_seq)
+                        break
                     self.next_expected_seq += len(self.RcvBuffer[i][1])
                     # print("NextSeqNum3: ", self.NextSeqNum)
                     if self.RcvBuffer[i][2] == 2:
@@ -91,5 +94,35 @@ class Receiver(UDP):
             rwnd=rwnd,
             addr=self.addr,
         )
-        logger.info(f"Send: ack {self.next_expected_seq}, rwnd: {rwnd}")
+        # logger.info(f"Send: ack {self.next_expected_seq}, rwnd: {rwnd}")
         return finishFlag
+
+    def fastRetransmit(self,seq:int):
+        super().sendSegment(
+            Type.ACK,
+            data=b"",
+            seq=0,
+            ack=seq,
+            sf=0,
+            rwnd=0,
+            addr=self.addr,
+        )
+        super().sendSegment(
+            Type.ACK,
+            data=b"",
+            seq=0,
+            ack=seq,
+            sf=0,
+            rwnd=0,
+            addr=self.addr,
+        )
+        super().sendSegment(
+            Type.ACK,
+            data=b"",
+            seq=0,
+            ack=seq,
+            sf=0,
+            rwnd=0,
+            addr=self.addr,
+        )
+        logger.info(f"Send: ack {self.next_expected_seq}")

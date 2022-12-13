@@ -7,7 +7,7 @@ from sender import Sender
 import socket
 
 with open("src/test.txt", "rb") as f:
-    data = f.read(100 * 1024)
+    data = f.read(10 * 1024 * 1024)
 
 if __name__ == '__main__':
     sender = Sender(
@@ -19,12 +19,16 @@ if __name__ == '__main__':
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("127.0.0.1", 40000))
-    sock.settimeout(1)
+    sock.settimeout(0.1)
     while True:
         sender.fillSndBuffer()
         sender.slideWindow()
         try:
             data, addr = sock.recvfrom(sender.MSS + 21)
+            import random
+            if random.randint(0,100) < 0:
+                print("loss!!! ack = ", sender.unpack(data)[0][6])
+                raise socket.timeout
         except socket.timeout:
             sender.detectTimeout()
             continue
@@ -35,4 +39,6 @@ if __name__ == '__main__':
         # print(ack, rwnd)
         sender.recvAckAndRwnd(ack=ack, rwnd=rwnd)
         sender.detectTimeout()
+        if sender.finish:
+            break
         # sender.fillSndBuffer()

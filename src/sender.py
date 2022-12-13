@@ -50,6 +50,7 @@ class Sender(UDP):
         self.TimeStart = time.time()
         self.TimeoutInterval = 1.0
         self.end = False
+        self.finish = False
 
         # [[SeqNum, Segment, Sent, Start Time]]
         self.SndBuffer = [
@@ -106,7 +107,7 @@ class Sender(UDP):
 
     # if the package if ack
     def recvAckAndRwnd(self, ack: int, rwnd: int):
-        logger.info(f"Ack {ack}, Rwnd {rwnd}")
+        # logger.info(f"Ack {ack}, Rwnd {rwnd}")
         # header, data = super().unpack(package)
         # _, _, type1, _, _, seq, ack, sf, rwnd = header
         # # seq = socket.ntohl(seq)
@@ -130,6 +131,7 @@ class Sender(UDP):
                 if (len(self.SndBuffer)) == 0 and super().unpack(s[1])[0][7] == 2:
                     logger.info("Finish")
                     logger.info("Time: %f", time.time() - self.TimeStart)
+                    self.finish = True
             self.rwnd = rwnd
             self.TimeStart = time.time()
 
@@ -138,6 +140,8 @@ class Sender(UDP):
         self.EstimatedRTT = 0.875 * self.EstimatedRTT + 0.125 * sampleRTT
         self.DevRTT = 0.75 * self.DevRTT + 0.25 * abs(sampleRTT - self.EstimatedRTT)
         self.TimeoutInterval = self.EstimatedRTT + 4 * self.DevRTT
+        if self.TimeoutInterval > 3:
+            self.TimeoutInterval = 3
 
     def switchCongestionStatus(self, event: Event):
         oldStatus = self.congestionStatus
@@ -207,7 +211,7 @@ class Sender(UDP):
         for i in range(len(self.SndBuffer)):
             if not self.SndBuffer[i][2] and self.SndBuffer[i][0] - self.NextSeqNum <= min(self.rwnd, self.cwnd):
                 self.SndBuffer[i].append(time.time())
-                logger.info("Send: Seq:%d", self.SndBuffer[i][0])
+                # logger.info("Send: Seq:%d", self.SndBuffer[i][0])
                 super().send(self.SndBuffer[i][1], self.addr)
                 self.TimeStart = time.time()
                 self.SndBuffer[i][2] = True
@@ -217,7 +221,7 @@ class Sender(UDP):
     def retranmission(self):
         for segment in self.SndBuffer:
             if segment[0] == self.NextSeqNum:
-                print(segment)
+                # print(segment)
                 segment[3] = time.time()
                 super().send(segment[1], self.addr)
                 logger.info("Retranmission: %d", segment[0])

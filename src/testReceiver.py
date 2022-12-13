@@ -18,8 +18,16 @@ if __name__ == '__main__':
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("127.0.0.1", 40001))
+    sock.settimeout(1)
     while True:
-        data, addr = sock.recvfrom(receiver.MSS+21)
+        try:
+            data, addr = sock.recvfrom(receiver.MSS+21)
+            import random
+            if random.randint(0, 100) < 5:
+                print("loss!!! seq = ", receiver.unpack(data)[0][5])
+                raise socket.timeout
+        except socket.timeout:
+            continue
         # print(data)
         header, data = receiver.unpack(data)
         # print(header)

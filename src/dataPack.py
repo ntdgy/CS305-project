@@ -62,9 +62,13 @@ class UDP:
         header, data = self.unpack(package)
         return header, data, addr
 
-# UDP=UDP(None)
-# # a = UDP.pack(1, b"123", 1, 1, 1, 1)
-# # print(a)
+
+# data = b""
+# a = struct.pack(">HBBHHIIBI", 52305, 1, 1, struct.calcsize(">HBBHHIIBI"), struct.calcsize(">HBBHHIIBI") + len(data), 1, 1,
+#                 1, 1, )
+# print(a)
+# StdHeaderLen = struct.calcsize("HBBHHII")
+# magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("HBBHHII", a[:StdHeaderLen])
 # data = b'\xccQ\x01\x03\x00\x15\x00\x16\x00\xa0\x046\x00\x00\x00\x00\x02\x00\x00\x00\x000'
 # header, data = UDP.unpack(data)
 # print(header)
@@ -73,5 +77,3 @@ class UDP:
 # header, data = UDP.unpack(data)
 # print(header)
 # print(data)
-if __name__ == '__main__':
-    print(UDP(None).unpack(b'\xccQ\x01\x03\x00\x15\x00\x15\x00\x01\x90\x07\x00\x00\x00\x00\x02\x00\x00\x00\x00'))
