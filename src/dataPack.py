@@ -73,3 +73,5 @@ class UDP:
 # header, data = UDP.unpack(data)
 # print(header)
 # print(data)
+if __name__ == '__main__':
+    print(UDP(None).unpack(b'\xccQ\x01\x03\x00\x15\x00\x15\x00\x01\x90\x07\x00\x00\x00\x00\x02\x00\x00\x00\x00'))
