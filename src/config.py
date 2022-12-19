@@ -15,6 +15,7 @@ class Type(Enum):
     DATA = 3
     ACK = 4
     DENIED = 5
+    DONT_HAVE = 6
 
 
 class CongestionStatus(Enum):

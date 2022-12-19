@@ -10,14 +10,14 @@ from config import Type
 
 
 class UDP:
-    # def __init__(self, sock: simsocket) -> None:
-    def __init__(self, sock: None) -> None:
+    def __init__(self, sock: simsocket) -> None:
+    # def __init__(self, sock: None) -> None:
         self.HEADER_LEN = struct.calcsize(config.headerType)
         self.BUF_SIZE = 1400
         self.MAGIC = 52305
         self.TEAM = config.TEAM
-        # self.sock = sock
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock = sock
+        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def pack(self, type1: int, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0):
         a = (
@@ -63,17 +63,8 @@ class UDP:
         return header, data, addr
 
 
-# data = b""
-# a = struct.pack(">HBBHHIIBI", 52305, 1, 1, struct.calcsize(">HBBHHIIBI"), struct.calcsize(">HBBHHIIBI") + len(data), 1, 1,
-#                 1, 1, )
-# print(a)
-# StdHeaderLen = struct.calcsize("HBBHHII")
-# magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("HBBHHII", a[:StdHeaderLen])
-# data = b'\xccQ\x01\x03\x00\x15\x00\x16\x00\xa0\x046\x00\x00\x00\x00\x02\x00\x00\x00\x000'
-# header, data = UDP.unpack(data)
-# print(header)
-# print(data)
-# data = b'\xccQ\x01\x03\x00\x15\x00\x16\x00\xa0\tZ\x00\x00\x00\x00\x02\x00\x00\x00\x000'
-# header, data = UDP.unpack(data)
-# print(header)
-# print(data)
+UDP = UDP(None)
+a = UDP.pack(1, b"123", 1, 1, 1, 1)
+print(a)
+print(UDP.unpack(a))
+

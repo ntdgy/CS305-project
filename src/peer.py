@@ -10,6 +10,12 @@ import util.bt_utils as bt_utils
 import hashlib
 import argparse
 import pickle
+import time
+from config import HEADER_LEN, Type
+from typing import List, Tuple
+from dataPack import UDP
+from receiver import Receiver
+from sender import Sender
 
 """
 This is CS305 project skeleton code.
@@ -17,7 +23,14 @@ Please refer to the example files - example/dumpreceiver.py and example/dumpsend
 """
 
 BUF_SIZE = 1400
-HEADER_LEN = struct.calcsize("HBBHHII")
+
+config1 = None
+ReceiverList = {}
+SenderList = {}
+udp: UDP
+checkList = []
+chunk_output = {}
+simsock = None
 
 
 def process_download(sock, chunkfile, outputfile):
@@ -25,14 +38,114 @@ def process_download(sock, chunkfile, outputfile):
     if DOWNLOAD is used, the peer will keep getting files until it is done
     '''
     print('PROCESS DOWNLOAD SKELETON CODE CALLED.  Fill me in!')
+    with open(chunkfile, "r") as cf:
+        lines = cf.readlines()
+        for line in lines:
+            index, datahash_str = line.strip().split(" ")
+            datahash = bytes.fromhex(datahash_str)
+            chunk_output[datahash_str] = outputfile
+            config1.haschunks[datahash] = None
+            for peer in config1.peers:
+                if int(peer[0]) != config1.identity:
+                    sock.sendto(udp.pack(type1=Type.WHOHAS.value, data=datahash, ack=0, seq=0, sf=0), peer[1],
+                                int(peer[2]))
+                checkList.append((datahash, (peer[1], int(peer[2]), time.time())))
 
 
 def process_inbound_udp(sock):
     # Receive pkt
     pkt, from_addr = sock.recvfrom(BUF_SIZE)
-    Magic, Team, Type, hlen, plen, Seq, Ack = struct.unpack("HBBHHII", pkt[:HEADER_LEN])
-    data = pkt[HEADER_LEN:]
-    print("SKELETON CODE CALLED, FILL this!")
+    header, data = udp.unpack(pkt)
+    _, _, type1, _, _, seq, ack, sf, rwnd = header
+    if type1 == 0:
+        # WHOHAS
+        # see what chunk the sender has
+        if len(SenderList) >= config1.max_conn:
+            udp.sendSegment(type1=Type.DENIED, data=b'', ack=0, seq=0, sf=0, addr=from_addr)
+            return
+        whohas_chunk_hash = data[:20]
+        chunkhash_str = bytes.hex(whohas_chunk_hash)
+        print(f"whohas: {chunkhash_str}, has: {list(config1.haschunks.keys())}")
+        if chunkhash_str in config1.haschunks:
+            udp.sendSegment(type1=Type.IHAVE, data=whohas_chunk_hash, seq=0, ack=0, sf=0, rwnd=0, addr=from_addr)
+        else:
+            udp.sendSegment(type1=Type.DONT_HAVE, data=whohas_chunk_hash, seq=0, ack=0, sf=0, rwnd=0, addr=from_addr)
+    elif type1 == 1:
+        # ihave
+        # get_chunk_hash : bytes
+        get_chunk_hash = data[:20]
+        print(f"get: {get_chunk_hash}")
+        print(f"ihave: {bytes.hex(get_chunk_hash)}")
+        for check in checkList:
+            if check[0] == get_chunk_hash:
+                checkList.remove(check)
+        udp.sendSegment(type1=Type.GET, data=get_chunk_hash, seq=0, ack=0, sf=0, rwnd=0, addr=from_addr)
+        receiver = Receiver(sock=sock, hash=get_chunk_hash, addr=from_addr)
+        ReceiverList[from_addr] = receiver
+    elif type1 == 2:
+        get_chunk_hash = data[:20]
+        chunk_data = config1.haschunks[get_chunk_hash]
+        sender = Sender(sock=sock, data=chunk_data, addr=from_addr)
+        SenderList[from_addr] = sender
+        sender.fillSndBuffer()
+        sender.slideWindow()
+    elif type1 == 3:
+        # DATA
+        if from_addr in ReceiverList:
+            receiver = ReceiverList[from_addr]
+            header, data = receiver.unpack(data)
+            if receiver.rcvSegment(header, data):
+                config1.haschunks[receiver.hash] = receiver.data
+                with open(config1.has_chunk_file, "wb") as f:
+                    pickle.dump(config1.haschunks, f)
+                with open(chunk_output[bytes.hex(receiver.hash)], "wb") as f:
+                    pickle.dump(receiver.data, f)
+                print(f"Received chunk {receiver.hash}")
+                sha1 = hashlib.sha1()
+                sha1.update(receiver.data)
+                received_chunkhash_str = sha1.hexdigest()
+                print(f"Expected chunkhash: {receiver.hash}")
+                print(f"Received chunkhash: {received_chunkhash_str}")
+                success = receiver.hash == received_chunkhash_str
+                print(f"Successful received: {success}")
+                if success:
+                    print("Congrats! You have completed the example!")
+                else:
+                    print("Example fails. Please check the example files carefully.")
+    elif type1 == 4:
+        # ACK
+        if from_addr in ReceiverList:
+            sender = ReceiverList[from_addr]
+            header, data = sender.unpack(data)
+            ack = header[6]
+            rwnd = header[8]
+            sender.recvAckAndRwnd(ack=ack, rwnd=rwnd)
+            sender.detectTimeout()
+            sender.fillSndBuffer()
+            sender.slideWindow()
+            if sender.finish:
+                del ReceiverList[from_addr]
+    elif type1 == 5:
+        # DENIED
+        get_chunk_hash = data[:20]
+        for check in checkList:
+            if check[0] == get_chunk_hash:
+                checkList.remove(check)
+    elif type1 == 6:
+        # don't have
+        get_chunk_hash = data[:20]
+        for check in checkList:
+            if check[0] == get_chunk_hash and check[1] == from_addr:
+                checkList.remove(check)
+
+
+def checkCheckList():
+    now = time.time()
+    for check in checkList:
+        if now - check[2] > 3:
+            checkList.remove(check)
+            simsock.sendto(udp.pack(type1=Type.WHOHAS.value, data=check[0], ack=0, seq=0, sf=0), check[1][0],
+                           check[1][1])
 
 
 def process_user_input(sock):
@@ -43,13 +156,16 @@ def process_user_input(sock):
         pass
 
 
-def peer_run(config):
-    addr = (config.ip, config.port)
-    sock = simsocket.SimSocket(config.identity, addr, verbose=config.verbose)
-
+def peer_run(config1):
+    addr = (config1.ip, config1.port)
+    sock = simsocket.SimSocket(config1.identity, addr, verbose=config1.verbose)
+    global simsock
+    simsock = sock
+    global udp
+    udp = UDP(sock)
     try:
         while True:
-            ready = select.select([sock, sys.stdin], [], [], 0.1)
+            ready = select.select([sock, sys.stdin], [], [], 0.001)
             read_ready = ready[0]
             if len(read_ready) > 0:
                 if sock in read_ready:
@@ -84,5 +200,5 @@ if __name__ == '__main__':
     parser.add_argument('-t', type=int, help="pre-defined timeout", default=0)
     args = parser.parse_args()
 
-    config = bt_utils.BtConfig(args)
-    peer_run(config)
+    config1 = bt_utils.BtConfig(args)
+    peer_run(config1)

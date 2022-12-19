@@ -21,8 +21,9 @@ if __name__ == '__main__':
     sock.settimeout(1)
     while True:
         try:
-            data, addr = sock.recvfrom(receiver.MSS+21)
+            data, addr = sock.recvfrom(receiver.MSS + 21)
             import random
+
             if random.randint(0, 100) < 5:
                 print("loss!!! seq = ", receiver.unpack(data)[0][5])
                 raise socket.timeout
@@ -35,4 +36,3 @@ if __name__ == '__main__':
             break
     with open("test1.txt", "wb") as f:
         f.write(receiver.data)
-
