@@ -20,7 +20,7 @@ However, note that this is just a sanity test. Passing this test does *NOT* guar
 @pytest.fixture(scope='module')
 def drop_session():
     success = False
-    time_max = 80
+    time_max = 1
 
     stime = time.time()
     drop_session = grader.GradingSession(grader.drop_handler, latency=0.01)
@@ -33,6 +33,7 @@ def drop_session():
     proc = drop_session.peer_list[("127.0.0.1", 48001)].process
 
     for line in proc.stdout:
+        print(line)
         if "GOT" in line:
             success = True
             break

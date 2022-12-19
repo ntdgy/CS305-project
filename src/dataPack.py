@@ -64,7 +64,8 @@ class UDP:
 
 
 # UDP = UDP(None)
-# a = UDP.pack(1, b"123", 1, 1, 1, 1)
-# print(a)
+# # # a = UDP.pack(1, b"123", 1, 1, 1, 1)
+# a = b'\xccQ\x01\x00\x00\x15\x00)\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00;h\x11\x08G\x94\x1b\x84\xe8\xd0T\x17\xa5\xb2`\x91"\xa5c\x14'
+# # # print(a)
 # print(UDP.unpack(a))
 

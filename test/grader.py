@@ -76,6 +76,7 @@ class GradingSession:
             read_ready = ready[0]
             if len(read_ready) > 0:
                 pkt = self.checker_sock.recv_pkt_from()
+                # print(f"recv pkt from {pkt.from_addr} to {pkt.to_addr} type {pkt.pkt_type}")
                 self.peer_list[pkt.from_addr].record_send_pkt(pkt.pkt_type, pkt.to_addr)
                 self.checker_recv_queue.put(pkt)
     
@@ -83,6 +84,7 @@ class GradingSession:
         while not self._FINISH:
             try:
                 pkt = self.checker_send_queue.get(timeout = 0.01)
+                # print(f"send pkt from {pkt.from_addr} to {pkt.to_addr} type {pkt.pkt_type}")
             except:
                 continue
             
