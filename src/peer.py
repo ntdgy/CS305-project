@@ -31,6 +31,7 @@ udp: UDP
 checkList = []
 chunk_output = {}
 simsock = None
+start_time = 0
 
 
 def process_download(sock, chunkfile, outputfile):
@@ -38,6 +39,8 @@ def process_download(sock, chunkfile, outputfile):
     if DOWNLOAD is used, the peer will keep getting files until it is done
     '''
     print('PROCESS DOWNLOAD SKELETON CODE CALLED.  Fill me in!')
+    global start_time
+    start_time = time.time()
     with open(chunkfile, "r") as cf:
         lines = cf.readlines()
         for line in lines:
@@ -120,6 +123,7 @@ def process_inbound_udp(sock):
                 print(f"Received chunkhash: {received_chunkhash_str}")
                 success = receiver.hash == received_chunkhash_str.encode()
                 print(f"Successful received: {success}")
+                print(f"Time elapsed: {time.time() - start_time}")
                 if success:
                     print("Congrats! You have completed the example!")
                 else:

@@ -4,7 +4,7 @@ import pytest
 
 @pytest.fixture(scope='module')
 def normal_session():
-    blocking_time = 1
+    blocking_time = 10
     handshaking_session = grader.GradingSession(grader.normal_handler)
     handshaking_session.add_peer(1, "src/peer.py", "test/tmp1/nodes1.map", "test/tmp1/data1.fragment", 1, ("127.0.0.1", 48001))
     handshaking_session.add_peer(2, "src/peer.py", "test/tmp1/nodes1.map", "test/tmp1/data2.fragment", 1, ("127.0.0.1", 48002))

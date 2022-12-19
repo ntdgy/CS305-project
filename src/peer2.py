@@ -52,8 +52,8 @@ class BtConfig():
 # "test/tmp1/nodes1.map", "test/tmp1/data1.fragment", 1, ("127.0.0.1", 48001)
 args = {}
 args['i'] = 2
-args['p'] = "../test/tmp2/nodes2.map"
-args['c'] = "../test/tmp2/data2.fragment"
+args['p'] = "../test/tmp1/nodes1.map"
+args['c'] = "../test/tmp1/data2.fragment"
 args['m'] = 1
 args['v'] = 0
 args['t'] = 0
