@@ -63,8 +63,8 @@ class UDP:
         return header, data, addr
 
 
-UDP = UDP(None)
-a = UDP.pack(1, b"123", 1, 1, 1, 1)
-print(a)
-print(UDP.unpack(a))
+# UDP = UDP(None)
+# a = UDP.pack(1, b"123", 1, 1, 1, 1)
+# print(a)
+# print(UDP.unpack(a))
 

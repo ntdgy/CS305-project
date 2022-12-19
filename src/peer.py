@@ -47,8 +47,8 @@ def process_download(sock, chunkfile, outputfile):
             config1.haschunks[datahash] = None
             for peer in config1.peers:
                 if int(peer[0]) != config1.identity:
-                    sock.sendto(udp.pack(type1=Type.WHOHAS.value, data=datahash, ack=0, seq=0, sf=0), peer[1],
-                                int(peer[2]))
+                    sock.sendto(udp.pack(type1=Type.WHOHAS.value, data=datahash, ack=0, seq=0, sf=0), (peer[1],
+                                int(peer[2])))
                 checkList.append((datahash, (peer[1], int(peer[2]), time.time())))
 
 
@@ -57,9 +57,11 @@ def process_inbound_udp(sock):
     pkt, from_addr = sock.recvfrom(BUF_SIZE)
     header, data = udp.unpack(pkt)
     _, _, type1, _, _, seq, ack, sf, rwnd = header
+    print('RECEIVED PKT: type = {}, seq = {}, ack = {}, sf = {}, rwnd = {}'.format(type1, seq, ack, sf, rwnd))
     if type1 == 0:
         # WHOHAS
         # see what chunk the sender has
+        print('WHO HAS')
         if len(SenderList) >= config1.max_conn:
             udp.sendSegment(type1=Type.DENIED, data=b'', ack=0, seq=0, sf=0, addr=from_addr)
             return
@@ -67,6 +69,7 @@ def process_inbound_udp(sock):
         chunkhash_str = bytes.hex(whohas_chunk_hash)
         print(f"whohas: {chunkhash_str}, has: {list(config1.haschunks.keys())}")
         if chunkhash_str in config1.haschunks:
+            print(f"ihave: {chunkhash_str}, has: {list(config1.haschunks.keys())}")
             udp.sendSegment(type1=Type.IHAVE, data=whohas_chunk_hash, seq=0, ack=0, sf=0, rwnd=0, addr=from_addr)
         else:
             udp.sendSegment(type1=Type.DONT_HAVE, data=whohas_chunk_hash, seq=0, ack=0, sf=0, rwnd=0, addr=from_addr)
@@ -144,12 +147,13 @@ def checkCheckList():
     for check in checkList:
         if now - check[2] > 3:
             checkList.remove(check)
-            simsock.sendto(udp.pack(type1=Type.WHOHAS.value, data=check[0], ack=0, seq=0, sf=0), check[1][0],
-                           check[1][1])
+            simsock.sendto(udp.pack(type1=Type.WHOHAS.value, data=check[0], ack=0, seq=0, sf=0), (check[1][0],
+                           check[1][1]))
 
 
 def process_user_input(sock):
     command, chunkf, outf = input().split(' ')
+    print(f"command: {command}, chunkf: {chunkf}, outf: {outf}")
     if command == 'DOWNLOAD':
         process_download(sock, chunkf, outf)
     else:
