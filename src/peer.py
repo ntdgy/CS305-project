@@ -53,7 +53,7 @@ def process_download(sock, chunkfile, outputfile):
                 if int(peer[0]) != config1.identity:
                     print(udp.pack(type1=Type.WHOHAS.value, data=datahash, ack=0, seq=0, sf=0))
                     sock.sendto(udp.pack(type1=Type.WHOHAS.value, data=datahash, ack=0, seq=0, sf=0), (peer[1],
-                                int(peer[2])))
+                                                                                                       int(peer[2])))
                 checkList.append((datahash, (peer[1], int(peer[2]), time.time())))
 
 
@@ -161,7 +161,7 @@ def checkCheckList():
         if now - check[2] > 3:
             checkList.remove(check)
             simsock.sendto(udp.pack(type1=Type.WHOHAS.value, data=check[0], ack=0, seq=0, sf=0), (check[1][0],
-                           check[1][1]))
+                                                                                                  check[1][1]))
 
 
 def process_user_input(sock):
@@ -197,6 +197,10 @@ def peer_run(config):
                     SenderList[addr].detectTimeout()
                     SenderList[addr].fillSndBuffer()
                     SenderList[addr].slideWindow()
+                try:
+                    checkCheckList()
+                except:
+                    pass
     except KeyboardInterrupt:
         pass
     finally:

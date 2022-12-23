@@ -21,7 +21,7 @@ logger = logging.getLogger()
 
 
 class Receiver(UDP):
-    def __init__(self, sock: simsocket, addr: tuple, hash: str = None, Mss: int = 1248) -> None:
+    def __init__(self, sock: simsocket, addr: tuple, hash: str = None, Mss: int = 1400) -> None:
         super().__init__(sock=sock)
         self.finished = False
         self.addr = addr
@@ -38,7 +38,6 @@ class Receiver(UDP):
         self.count = 0
         self.lastTime = 0
         self.next_expected_seq = 0
-
 
     def rcvSegment(self, header: tuple, data: bytes) -> bool:
         finishFlag = False
@@ -98,7 +97,6 @@ class Receiver(UDP):
         )
         # logger.info(f"Send: ack {self.next_expected_seq}, rwnd: {rwnd}")
         return finishFlag
-
 
     def fastRetransmit(self, seq: int):
         super().sendSegment(

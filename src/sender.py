@@ -22,12 +22,12 @@ logger = logging.getLogger()
 
 class Sender(UDP):
     def __init__(
-            # self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1248
-            self,
-            sock: socket.socket,
-            addr: tuple,
-            data: bytes,
-            MSS: int = 1248,
+            self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1400
+            # self,
+            # sock: socket.socket,
+            # addr: tuple,
+            # data: bytes,
+            # MSS: int = 1248,
     ) -> None:
         super().__init__(sock)
         self.addr = addr
@@ -124,7 +124,8 @@ class Sender(UDP):
                 self.progress += 1
             if progress < self.progress:
                 logger.info("Progress: %d%%", self.progress * 5)
-                logger.info(f"EstimatedRTT={self.EstimatedRTT} DevRTT={self.DevRTT} TimeoutInterval={self.TimeoutInterval}")
+                logger.info(
+                    f"EstimatedRTT={self.EstimatedRTT} DevRTT={self.DevRTT} TimeoutInterval={self.TimeoutInterval}")
             while len(self.SndBuffer) and self.SndBuffer[0][0] < self.NextSeqNum:
                 self.updateTimeOutInterval(self.SndBuffer[0][3])
                 s = self.SndBuffer.pop(0)

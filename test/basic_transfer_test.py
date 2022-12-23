@@ -27,7 +27,6 @@ def drop_session():
     drop_session.add_peer(1, "src/peer.py", "test/tmp2/nodes2.map", "test/tmp2/data1.fragment", 1, ("127.0.0.1", 48001))
     drop_session.add_peer(2, "src/peer.py", "test/tmp2/nodes2.map", "test/tmp2/data2.fragment", 1, ("127.0.0.1", 48002))
     drop_session.run_grader()
-
     drop_session.peer_list[("127.0.0.1", 48001)].send_cmd('''DOWNLOAD test/tmp2/download_target.chunkhash test/tmp2/download_result.fragment\n''')
 
     proc = drop_session.peer_list[("127.0.0.1", 48001)].process
@@ -40,7 +39,11 @@ def drop_session():
         elif time.time()-stime>time_max:
             # Reached max transmission time, abort
             success = False
-            break 
+            break
+    print("Test finished")
+    print("Time elapsed: ", time.time()-stime)
+
+
         
     # time.sleep(5)
     
