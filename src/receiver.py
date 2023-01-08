@@ -21,11 +21,11 @@ logger = logging.getLogger()
 
 
 class Receiver(UDP):
-    def __init__(self, sock: simsocket, addr: tuple, hash: str = None, Mss: int = 1400) -> None:
+    def __init__(self, sock: simsocket, remote_addr: Tuple[str, int], hash: str, Mss: int = 1400) -> None:
         super().__init__(sock=sock)
         self.finished = False
-        self.addr = addr
-        self.hash = hash
+        self.remote_addr = remote_addr
+        self.hash: str = hash
         self.MSS = Mss
         self.data = b""
         self.dataLen = 0
@@ -36,13 +36,14 @@ class Receiver(UDP):
         self.dataLen = 0
         self.progress = 1
         self.count = 0
-        self.lastTime = 0
+        self.lastTime = time.time()
         self.next_expected_seq = 0
 
     def rcvSegment(self, header: tuple, data: bytes) -> bool:
         finishFlag = False
         _, _, type1, _, _, seq, ack, sf, rwnd = header
         # logger.info("Recv: seq: %d, ack: %d, len: %d", seq, ack, len(data))
+        self.lastTime = time.time()
         if sf == 1:
             self.next_expected_seq = seq + len(data)
             self.first = True
@@ -54,7 +55,6 @@ class Receiver(UDP):
                 logger.info(f"Data length: {self.dataLen}")
                 self.next_expected_seq = seq + len(data)
                 # print("NextSeqNum2: ", self.NextSeqNum)
-                self.lastTime = time.time()
             else:
                 # progress = self.progress
                 # while self.count * self.MSS / self.dataLen >= self.progress * 0.05:
@@ -93,7 +93,7 @@ class Receiver(UDP):
             ack=self.next_expected_seq,
             sf=0,
             rwnd=rwnd,
-            addr=self.addr,
+            addr=self.remote_addr,
         )
         # logger.info(f"Send: ack {self.next_expected_seq}, rwnd: {rwnd}")
         return finishFlag
@@ -106,7 +106,7 @@ class Receiver(UDP):
             ack=seq,
             sf=0,
             rwnd=0,
-            addr=self.addr,
+            addr=self.remote_addr,
         )
         super().sendSegment(
             Type.ACK,
@@ -115,7 +115,7 @@ class Receiver(UDP):
             ack=seq,
             sf=0,
             rwnd=0,
-            addr=self.addr,
+            addr=self.remote_addr,
         )
         super().sendSegment(
             Type.ACK,
@@ -124,6 +124,6 @@ class Receiver(UDP):
             ack=seq,
             sf=0,
             rwnd=0,
-            addr=self.addr,
+            addr=self.remote_addr,
         )
         logger.info(f"Send: ack {self.next_expected_seq}")

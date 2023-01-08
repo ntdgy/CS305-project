@@ -21,15 +21,9 @@ logger = logging.getLogger()
 
 
 class Sender(UDP):
-    def __init__(
-            self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1400
-            # self,
-            # sock: socket.socket,
-            # addr: tuple,
-            # data: bytes,
-            # MSS: int = 1248,
-    ) -> None:
+    def __init__(self, sock: simsocket, addr: tuple, data: bytes, MSS: int = 1300):
         super().__init__(sock)
+        print(f"Sender init {len(data)}")
         self.addr = addr
         self.data = data
         self.dataPointer = 0

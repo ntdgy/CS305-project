@@ -1,6 +1,7 @@
 import sys
 import os
 import pickle
+from typing import Dict, List, Tuple
 
 class BtConfig:
     def __init__(self, args):
@@ -10,7 +11,11 @@ class BtConfig:
         self.max_conn = args.m
         self.identity = args.i
         self.peers = []
-        self.haschunks = dict()
+        self.haschunks: Dict[str, bytes] = dict()
+        self.downloaded_chunks: Dict[str, bytes] = dict()
+        self.pending_chunks: List[str] = list()
+        # save downloaded chunks into chunk_output_file
+        self.chunk_output_file = ''
         self.verbose = args.v
         self.timeout = args.t
 

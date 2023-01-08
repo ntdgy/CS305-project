@@ -405,8 +405,8 @@ sub main() {
 		($seconds, $microsec) = gettimeofday();
 		$systimesec = sprintf("%d.%06d", $seconds, $microsec);
 		if ($verbose > 3) { print "Time is $systimesec.\n"; }
-		if (my ($selSock) = $sel->can_read($sleepSeconds)) {
-#		if (my ($selSock) = $sel->can_read(0)) {
+#		if (my ($selSock) = $sel->can_read($sleepSeconds)) {
+		if (my ($selSock) = $sel->can_read(0)) {
 			my $pkt;
 			$selSock->recv($pkt, $PACKETSIZEMAX);
 			if ($verbose > 3) { print "Got a packet\n"; }
@@ -443,11 +443,11 @@ sub main() {
 		while (my $router = shift(@runRouters)) {
 			$wait = $router->run(\@runRouters);
 			if ($verbose > 3) { print "router ".$router->{'id'}." waits $wait\n"; }
-			if (defined($sleepSeconds)) {
-				$sleepSeconds = $wait if (defined ($wait) && ($wait < $sleepSeconds));
-			} else {
-				$sleepSeconds = $wait;
-			}
+#			if (defined($sleepSeconds)) {
+#				$sleepSeconds = $wait if (defined ($wait) && ($wait < $sleepSeconds));
+#			} else {
+#				$sleepSeconds = $wait;
+#			}
 		}
 		if ($verbose > 3) { print "Next socket timeout is ".($sleepSeconds)." seconds...\n"; }
 	}

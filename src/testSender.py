@@ -6,7 +6,7 @@ from sender import Sender
 
 import socket
 
-with open("src/test.txt", "rb") as f:
+with open("test.txt", "rb") as f:
     data = f.read(10 * 1024 * 1024)
 
 if __name__ == '__main__':

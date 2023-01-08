@@ -25,6 +25,13 @@ class PeerProc:
         self.send_record = dict() #{to_id:{type:cnt}}
         self.recv_record = dict() #{from_id:{type:cnt}}
         self.timeout = timeout
+        # stdout_filepath = f"log/peer_{self.id}.log"
+        # if os.path.exists(stdout_filepath):
+        #     os.remove(stdout_filepath)
+        # self.stdout = open(stdout_filepath, "w")
+        # self.stdout.write("GRADER: PeerProc {} created")
+        # self.stdout.flush()
+
 
     def start_peer(self):
         if self.timeout:
@@ -32,7 +39,7 @@ class PeerProc:
         else:
             cmd = f"python3 -u {self.peer_file_loc} -p {self.node_map_loc} -c {self.haschunk_loc} -m {self.max_transmit} -i {self.id}"
 
-        self.process = subprocess.Popen(cmd.split(" "), stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,text=True, bufsize=1, universal_newlines=True)
+        self.process = subprocess.Popen(cmd.split(" "), stdin=subprocess.PIPE,stdout=subprocess.DEVNULL, text=True, bufsize=1, universal_newlines=True)
         # ensure peer is running
         time.sleep(1)
 
@@ -58,12 +65,14 @@ class PeerProc:
 
     def terminate_peer(self):
         self.process.send_signal(signal.SIGINT)
+        # self.stdout.flush()
+        # self.stdout.close()
         # self.process.terminate()
         self.process = None
 
 
 class GradingSession:
-    def __init__(self, grading_handler, latency = 0.05, spiffy=False, topo_map = "test/tmp3/topo3.map", nodes_map = "test/tmp3/nodes3.map"):
+    def __init__(self, grading_handler, latency = 0.00, spiffy=False, topo_map = "test/tmp3/topo3.map", nodes_map = "test/tmp3/nodes3.map"):
         self.peer_list = dict()
         self.checkerIP = "127.0.0.1"
         self.checkerPort = random.randint(30525, 52305)
@@ -81,14 +90,13 @@ class GradingSession:
 
     def recv_pkt(self):
         while not self._FINISH:
-            ready = select.select([self.checker_sock],[],[],0.001)
+            ready = select.select([self.checker_sock], [], [], 0.005)
             read_ready = ready[0]
             if len(read_ready) > 0:
                 pkt = self.checker_sock.recv_pkt_from()
-                # print(f"recv pkt from {pkt.from_addr} to {pkt.to_addr} type {pkt.pkt_type}")
                 self.peer_list[pkt.from_addr].record_send_pkt(pkt.pkt_type, pkt.to_addr)
                 self.checker_recv_queue.put(pkt)
-    
+
     def send_pkt(self):
         while not self._FINISH:
             try:
@@ -96,7 +104,7 @@ class GradingSession:
                 # print(f"send pkt from {pkt.from_addr} to {pkt.to_addr} type {pkt.pkt_type}")
             except:
                 continue
-            
+
             if pkt.to_addr in self.peer_list:
                 self.peer_list[pkt.to_addr].record_recv_pkt(pkt.pkt_type, pkt.from_addr)
 
@@ -105,7 +113,7 @@ class GradingSession:
             # self.delay_pool.submit(lambda arg: GradingSession.delay_send(*arg), [self, pkt])
 
     def delay_send(self, pkt):
-        time.sleep(self.latency)
+        # time.sleep(self.latency)
         self.checker_sock.sendto(pkt.pkt_bytes, pkt.to_addr)
 
     def stop_grader(self):
@@ -121,7 +129,7 @@ class GradingSession:
         test_env = os.getenv("SIMULATOR")
         if test_env is None:
             raise Exception("Void env!")
-        
+
         # run workers
         if not self.spiffy:
             self.start_time = time.time()

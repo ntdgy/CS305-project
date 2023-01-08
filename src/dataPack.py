@@ -7,6 +7,7 @@ import socket
 import config
 import util.simsocket as simsocket
 from config import Type
+from typing import List, Tuple, Dict
 
 
 class UDP:
@@ -43,18 +44,12 @@ class UDP:
             package[self.HEADER_LEN:],
         )
 
-    def send(
-            self,
-            package: bytes,
-            addr: tuple,
-    ):
+    def send(self, package: bytes, addr: Tuple[str, int]):
+        # _, _, type1, _, totalLen, seq, ack, sf, rwnd = struct.unpack(config.headerType, package[: self.HEADER_LEN])
+        # print(f"SEND {addr[1]}: dataLen:{totalLen - self.HEADER_LEN} seq:{seq} ack:{ack} sf:{sf} rwnd:{rwnd}")
         self.sock.sendto(package, addr)
 
-    def sendSegment(self, type1: Type, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0, addr: tuple = None):
-        # print("sendSegment")
-        # print(type1, data, seq, ack, sf, rwnd, addr)
-        if rwnd < 0:
-            rwnd = 0
+    def sendSegment(self, type1: Type, data: bytes, seq: int, ack: int, sf: int, rwnd: int = 0, addr: Tuple[str, int] = None):
         self.send(self.pack(type1.value, data, seq, ack, sf, rwnd), addr)
 
     def recv(self):

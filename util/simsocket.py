@@ -60,8 +60,8 @@ class SimSocket():
         magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
                                                                              data_bytes[:self.__stdHeaderLen])
         if not self.__giSpiffyEnabled:
-            self.__logger.debug(
-                f"sending a type{pkt_type} pkt to {address} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            # self.__logger.debug(
+            #     f"sending a type{pkt_type} pkt to {address} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             return self.__sock.sendto(data_bytes, flags, address)
 
         s_head_lDestAddr = socket.inet_aton(ip)
@@ -81,8 +81,8 @@ class SimSocket():
 
         s_bytes = s_head + data_bytes
 
-        self.__logger.debug(
-            f"sending a type{pkt_type} pkt to {address} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+        # self.__logger.debug(
+        #     f"sending a type{pkt_type} pkt to {address} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
         ret = self.__sock.sendto(s_bytes, flags, self.__gsSpiffyAddr)
         return ret - len(s_head)
 
@@ -91,8 +91,8 @@ class SimSocket():
             ret = self.__sock.recvfrom(bufsize, flags)
             magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
                                                                                  ret[0][:self.__stdHeaderLen])
-            self.__logger.debug(
-                f"Receiving a type{pkt_type} pkt from {ret[1]} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            # self.__logger.debug(
+            #     f"Receiving a type{pkt_type} pkt from {ret[1]} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             return ret
 
         ret = self.__sock.recvfrom(bufsize + self.__spiffyHeaderLen, flags)
@@ -108,8 +108,6 @@ class SimSocket():
 
             magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
                                                                                  data_bytes[:self.__stdHeaderLen])
-            self.__logger.debug(
-                f"Receiving a type{pkt_type} pkt from {from_addr} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             # check if spiffy header intact
             if not to_addr == self.__address:
                 self.__logger.error("Packet header corrupted, please check bytes read.")

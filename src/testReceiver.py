@@ -9,7 +9,8 @@ from dataPack import UDP
 if __name__ == '__main__':
     receiver = Receiver(
         socket.socket(socket.AF_INET, socket.SOCK_DGRAM),
-        addr=("127.0.0.1", 40000),
+        hash='',
+        remote_addr=("127.0.0.1", 40000),
     )
     # data = b'\xccQ\x01\x01\x00\x15\x00\x18\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00\x01123'
     # header, data = receiver.unpack(data)
