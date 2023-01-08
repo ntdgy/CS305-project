@@ -14,7 +14,7 @@ class SimSocket():
     __spiffyHeaderLen = struct.calcsize("I4s4sHH")
     __stdHeaderLen = struct.calcsize("HBBHHII")
 
-    def __init__(self, id, address, verbose = 2) -> None:
+    def __init__(self, id, address, verbose=2) -> None:
         self.__address = address
         self.__sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.__sock.bind(address)
@@ -31,10 +31,10 @@ class SimSocket():
                 sh_level = logging.INFO
             elif verbose == 3:
                 sh_level = logging.DEBUG
-            else: 
+            else:
                 sh_level = logging.INFO
             sh = logging.StreamHandler(stream=sys.stdout)
-            sh.setLevel(level = sh_level)
+            sh.setLevel(level=sh_level)
             sh.setFormatter(formatter)
             self.__logger.addHandler(sh)
 
@@ -57,9 +57,11 @@ class SimSocket():
 
     def sendto(self, data_bytes, address, flags=0) -> int:
         ip, port = address
-        magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII", data_bytes[:self.__stdHeaderLen])
+        magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
+                                                                             data_bytes[:self.__stdHeaderLen])
         if not self.__giSpiffyEnabled:
-            self.__logger.debug(f"sending a type{pkt_type} pkt to {address} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            self.__logger.debug(
+                f"sending a type{pkt_type} pkt to {address} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             return self.__sock.sendto(data_bytes, flags, address)
 
         s_head_lDestAddr = socket.inet_aton(ip)
@@ -77,39 +79,48 @@ class SimSocket():
             s_head_lDestPort,
         )
 
-        s_bytes= s_head + data_bytes
+        s_bytes = s_head + data_bytes
 
-        self.__logger.debug(f"sending a type{pkt_type} pkt to {address} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+        self.__logger.debug(
+            f"sending a type{pkt_type} pkt to {address} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
         ret = self.__sock.sendto(s_bytes, flags, self.__gsSpiffyAddr)
         return ret - len(s_head)
 
     def recvfrom(self, bufsize, flags=0):
         if not self.__giSpiffyEnabled:
             ret = self.__sock.recvfrom(bufsize, flags)
-            magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII", ret[0][:self.__stdHeaderLen])
-            self.__logger.debug(f"Receiving a type{pkt_type} pkt from {ret[1]} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
+                                                                                 ret[0][:self.__stdHeaderLen])
+            self.__logger.debug(
+                f"Receiving a type{pkt_type} pkt from {ret[1]} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             return ret
 
         ret = self.__sock.recvfrom(bufsize + self.__spiffyHeaderLen, flags)
 
         if ret is not None:
             simu_bytes, addr = ret
-            _, s_head_lSrcAddr, s_head_lDestAddr, s_head_lSrcPort, s_head_lDestPort = struct.unpack("I4s4sHH", simu_bytes[:self.__spiffyHeaderLen])
+            _, s_head_lSrcAddr, s_head_lDestAddr, s_head_lSrcPort, s_head_lDestPort = struct.unpack("I4s4sHH",
+                                                                                                    simu_bytes[
+                                                                                                    :self.__spiffyHeaderLen])
             from_addr = (socket.inet_ntoa(s_head_lSrcAddr), socket.ntohs(s_head_lSrcPort))
             to_addr = (socket.inet_ntoa(s_head_lDestAddr), socket.ntohs(s_head_lDestPort))
             data_bytes = simu_bytes[self.__spiffyHeaderLen:]
 
-            magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII", data_bytes[:self.__stdHeaderLen])
-            self.__logger.debug(f"Receiving a type{pkt_type} pkt from {from_addr} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
+                                                                                 data_bytes[:self.__stdHeaderLen])
+            self.__logger.debug(
+                f"Receiving a type{pkt_type} pkt from {from_addr} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             # check if spiffy header intact
             if not to_addr == self.__address:
                 self.__logger.error("Packet header corrupted, please check bytes read.")
                 raise Exception("Packet header corrupted!")
+            return (data_bytes, from_addr)
+
 
         else:
             self.__logger.error("Error on simulator recvfrom")
 
-        return (data_bytes, from_addr)
+        return None
 
     def __simulator_init(self, nodeid):
         simulator_env = os.getenv("SIMULATOR")
@@ -123,7 +134,6 @@ class SimSocket():
             return False
 
         self.__gsSpiffyAddr = (addr[0], int(addr[1]))
-
 
         self.__glNodeID = nodeid
         self.__giSpiffyEnabled = True
