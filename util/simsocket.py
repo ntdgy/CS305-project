@@ -21,9 +21,6 @@ class SimSocket():
         self.__logger = logging.getLogger(f"PEER{id}_LOGGER")
         self.__logger.setLevel(logging.DEBUG)
         formatter = logging.Formatter(fmt="%(asctime)s -+- %(name)s -+- %(levelname)s -+- %(message)s")
-        formatter = logging.Formatter(
-            fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
         if verbose > 0:
             if verbose == 1:
                 sh_level = logging.WARNING
@@ -42,9 +39,7 @@ class SimSocket():
         log_dir = "log"
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
-        fh = logging.FileHandler(
-            filename=os.path.join(log_dir, f"peer{id}.log"), mode="w"
-        )
+        fh = logging.FileHandler(filename=os.path.join(log_dir, f"peer{id}.log"), mode="w")
 
         fh.setLevel(level=logging.DEBUG)
         fh.setFormatter(formatter)
@@ -60,8 +55,8 @@ class SimSocket():
         magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
                                                                              data_bytes[:self.__stdHeaderLen])
         if not self.__giSpiffyEnabled:
-            # self.__logger.debug(
-            #     f"sending a type{pkt_type} pkt to {address} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            self.__logger.debug(
+                f"sending a type{pkt_type} pkt to {address} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             return self.__sock.sendto(data_bytes, flags, address)
 
         s_head_lDestAddr = socket.inet_aton(ip)
@@ -70,19 +65,12 @@ class SimSocket():
         s_head_lSrcAddr = socket.inet_aton(self.__glSrcAddr)
         s_head_lSrcPort = socket.htons(self.__gsSrcPort)
 
-        s_head = struct.pack(
-            "I4s4sHH",
-            s_head_ID,
-            s_head_lSrcAddr,
-            s_head_lDestAddr,
-            s_head_lSrcPort,
-            s_head_lDestPort,
-        )
+        s_head = struct.pack("I4s4sHH", s_head_ID, s_head_lSrcAddr, s_head_lDestAddr, s_head_lSrcPort, s_head_lDestPort)
 
         s_bytes = s_head + data_bytes
 
-        # self.__logger.debug(
-        #     f"sending a type{pkt_type} pkt to {address} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+        self.__logger.debug(
+            f"sending a type{pkt_type} pkt to {address} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
         ret = self.__sock.sendto(s_bytes, flags, self.__gsSpiffyAddr)
         return ret - len(s_head)
 
@@ -91,8 +79,8 @@ class SimSocket():
             ret = self.__sock.recvfrom(bufsize, flags)
             magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
                                                                                  ret[0][:self.__stdHeaderLen])
-            # self.__logger.debug(
-            #     f"Receiving a type{pkt_type} pkt from {ret[1]} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
+            self.__logger.debug(
+                f"Receiving a type{pkt_type} pkt from {ret[1]} via normal socket, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             return ret
 
         ret = self.__sock.recvfrom(bufsize + self.__spiffyHeaderLen, flags)
@@ -108,17 +96,17 @@ class SimSocket():
 
             magic, team, pkt_type, header_len, pkt_len, seq, ack = struct.unpack("!HBBHHII",
                                                                                  data_bytes[:self.__stdHeaderLen])
+            self.__logger.debug(
+                f"Receiving a type{pkt_type} pkt from {from_addr} via spiffy, seq{seq}, ack{ack}, pkt_len{pkt_len}")
             # check if spiffy header intact
             if not to_addr == self.__address:
                 self.__logger.error("Packet header corrupted, please check bytes read.")
                 raise Exception("Packet header corrupted!")
-            return (data_bytes, from_addr)
-
 
         else:
             self.__logger.error("Error on simulator recvfrom")
 
-        return None
+        return (data_bytes, from_addr)
 
     def __simulator_init(self, nodeid):
         simulator_env = os.getenv("SIMULATOR")
@@ -139,9 +127,7 @@ class SimSocket():
         self.__glSrcAddr = self.__address[0]
         self.__gsSrcPort = self.__address[1]
 
-        self.__logger.info(
-            f"Network simulator activated, running at {self.__gsSpiffyAddr}."
-        )
+        self.__logger.info(f"Network simulator activated, running at {self.__gsSpiffyAddr}.")
         return True
 
     def add_log(self, msg):

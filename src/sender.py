@@ -140,6 +140,7 @@ class Sender(UDP):
 
     def switchCongestionStatus(self, event: Event):
         oldStatus = self.congestionStatus
+        print(f"cwnd {self.cwnd} {time.time()} ssthresh {self.ssthresh}")
         if event == Event.NEW_ACK:
             self.duplicateAck = 0
             if self.congestionStatus == CongestionStatus.SLOW_START:

@@ -18,7 +18,7 @@ args = dict()
 args['i'] = 1
 args['p'] = "test/tmp2/nodes2.map"
 args['c'] = "test/tmp2/data1.fragment"
-args['m'] = 1
+args['m'] = 100
 args['v'] = 0
 args['t'] = 0
 # DOWNLOAD test/tmp2/download_target.chunkhash test/tmp2/download_result.fragment

@@ -38,6 +38,7 @@ class Receiver(UDP):
         self.count = 0
         self.lastTime = time.time()
         self.next_expected_seq = 0
+        self.start_time = time.time()
 
     def rcvSegment(self, header: tuple, data: bytes) -> bool:
         finishFlag = False
@@ -77,6 +78,8 @@ class Receiver(UDP):
                     # print("NextSeqNum3: ", self.NextSeqNum)
                     if self.RcvBuffer[i][2] == 2:
                         finishFlag = True
+                        print("Finish")
+                        print(f"time cost: {time.time() - self.start_time}")
                         logger.info("Finish flag received")
                     else:
                         self.data += self.RcvBuffer[i][1]
@@ -86,6 +89,7 @@ class Receiver(UDP):
                 if len(self.RcvBuffer) == self.RcvBufferCapacity:
                     self.RcvBuffer.pop(0)
         rwnd = (self.RcvBufferCapacity - len(self.RcvBuffer)) * self.MSS
+        print(f"rwnd: {rwnd}")
         super().sendSegment(
             Type.ACK,
             data=b"",

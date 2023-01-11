@@ -406,7 +406,7 @@ sub main() {
 		$systimesec = sprintf("%d.%06d", $seconds, $microsec);
 		if ($verbose > 3) { print "Time is $systimesec.\n"; }
 #		if (my ($selSock) = $sel->can_read($sleepSeconds)) {
-		if (my ($selSock) = $sel->can_read(0)) {
+		if (my ($selSock) = $sel->can_read(0.001)) {
 			my $pkt;
 			$selSock->recv($pkt, $PACKETSIZEMAX);
 			if ($verbose > 3) { print "Got a packet\n"; }

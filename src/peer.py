@@ -11,36 +11,12 @@ import hashlib
 import argparse
 import pickle
 import time
-from config import HEADER_LEN, Type
+from config import HEADER_LEN, Type, ChunkStatusType, ChunkStatus
 from enum import Enum
 from typing import List, Tuple, Dict, NamedTuple
 from dataPack import UDP
 from receiver import Receiver
 from sender import Sender
-
-
-class ChunkStatusType(Enum):
-    ASKING = 0
-    DOWNLOADING = 1
-    DOWNLOADED = 2
-    SUSPENDING = 3
-    UNUSED = 4
-    # This peer declares it has the chunk, but this peer is downloading other chunk
-
-
-class ChunkStatus:
-    chunk_hash: str
-    peer: Tuple[str, int]
-    request_time: float
-    status: ChunkStatusType = ChunkStatusType.ASKING
-
-    def __init__(self, chunk_hash: str, peer: Tuple[str, int], request_time: float):
-        self.chunk_hash = chunk_hash
-        self.peer = peer
-        self.request_time = request_time
-
-    def __str__(self):
-        return f"[ChunkStatus: {self.chunk_hash}, {self.peer}, {self.request_time}, {self.status}]"
 
 """
 This is CS305 project skeleton code.
@@ -57,13 +33,16 @@ SenderList: Dict[Tuple[str, int], Sender] = {}
 udp: UDP = None
 simsock: simsocket.SimSocket = None
 start_time = 0
+chunk_output_file = ''
+downloaded_chunks: Dict[str, bytes] = dict()
+pending_chunks: List[str] = list()
 
 
 def process_download(sock, chunkfile: str, outputfile: str):
     """
     if DOWNLOAD is used, the peer will keep getting files until it is done
     """
-    global start_time
+    global start_time, chunk_output_file, downloaded_chunks, pending_chunks
     start_time = time.time()
     # load configs, fill has_chunks, chunk_output_file, and pending_chunks
     with open(chunkfile, "r") as cf:
@@ -71,10 +50,10 @@ def process_download(sock, chunkfile: str, outputfile: str):
         for line in lines:
             index, chunkhash_str = line.strip().split(" ")
             config1.haschunks[chunkhash_str] = b''
-            config1.chunk_output_file = outputfile
-            config1.pending_chunks.append(chunkhash_str)
-    print(f"Pending Chunks: {config1.pending_chunks}")
-    for chunk_hash in config1.pending_chunks:
+            chunk_output_file = outputfile
+            pending_chunks.append(chunkhash_str)
+    print(f"Pending Chunks: {pending_chunks}")
+    for chunk_hash in pending_chunks:
         for peer in config1.peers:
             if int(peer[0]) != config1.identity:
                 # print(udp.pack(type1=Type.WHOHAS.value, data=datahash, ack=0, seq=0, sf=0))
@@ -122,7 +101,8 @@ def process_inbound_udp(sock):
         print(f"IHAVE from {from_addr}, {chunk_hash_str}")
         if from_addr in ReceiverList:
             # This peer {from_addr} is downloading other chunk, mark this chunk as SUSPENDING and exit
-            print(f"Duplicated IHAVE from {from_addr}, {chunk_hash_str}: Exist chunk_hash {ReceiverList[from_addr].hash}, mark as suspended")
+            print(
+                f"Duplicated IHAVE from {from_addr}, {chunk_hash_str}: Exist chunk_hash {ReceiverList[from_addr].hash}, mark as suspended")
             for chunkStatus in chunkStatuses:
                 if chunkStatus.chunk_hash == chunk_hash_str and chunkStatus.peer == from_addr:
                     chunkStatus.status = ChunkStatusType.SUSPENDING
@@ -130,7 +110,8 @@ def process_inbound_udp(sock):
         for recv in ReceiverList:
             if ReceiverList[recv].hash == chunk_hash_str:
                 # This chunk is downloading from {chunkStatus.peer}, mark this chunk as SUSPENDING and exit
-                print(f"Duplicated IHAVE from {from_addr}, {chunk_hash_str}: Exist peer {recv} is downloading, mark as suspended")
+                print(
+                    f"Duplicated IHAVE from {from_addr}, {chunk_hash_str}: Exist peer {recv} is downloading, mark as suspended")
                 for chunkStatus in chunkStatuses:
                     if chunkStatus.chunk_hash == chunk_hash_str and chunkStatus.peer == from_addr:
                         chunkStatus.status = ChunkStatusType.SUSPENDING
@@ -160,8 +141,8 @@ def process_inbound_udp(sock):
                 # This chunk_hash is completed
                 # store data, remove chunk_hash from pending_chunks, and delete Receiver
                 config1.haschunks[chunk_hash_str] = receiver.data
-                config1.downloaded_chunks[chunk_hash_str] = receiver.data
-                config1.pending_chunks.remove(chunk_hash_str)
+                downloaded_chunks[chunk_hash_str] = receiver.data
+                pending_chunks.remove(chunk_hash_str)
                 for chunkStatus in chunkStatuses:
                     if chunkStatus.chunk_hash == chunk_hash_str and chunkStatus.peer == from_addr:
                         chunkStatus.status = ChunkStatusType.DOWNLOADED
@@ -174,18 +155,18 @@ def process_inbound_udp(sock):
                         if any(recv.hash == chunkStatus.chunk_hash for recv in ReceiverList.values()):
                             continue
                         # if this chunk is downloaded, mark it as unused
-                        if chunkStatus.chunk_hash in config1.downloaded_chunks:
+                        if chunkStatus.chunk_hash in downloaded_chunks:
                             chunkStatus.status = ChunkStatusType.UNUSED
                             continue
                         print(f"Resume suspended Chunk: {chunkStatus.chunk_hash} from {chunkStatus.peer}")
                         start_download(sock, chunkStatus.chunk_hash, chunkStatus.peer)
                         break
 
-                if len(config1.pending_chunks) == 0:
+                if len(pending_chunks) == 0:
                     # all chunks are received
-                    with open(config1.chunk_output_file, "wb") as f:
-                        pickle.dump(config1.downloaded_chunks, f)
-                    print(f"GOT {config1.chunk_output_file}")
+                    with open(chunk_output_file, "wb") as f:
+                        pickle.dump(downloaded_chunks, f)
+                    print(f"GOT {chunk_output_file}")
                     # sha1 = hashlib.sha1()
                     # sha1.update(receiver.data)
                     # received_chunkhash_str = sha1.hexdigest()
@@ -233,7 +214,8 @@ def checkCheckList():
         if check.status == ChunkStatusType.ASKING:
             if now - check.request_time > 3:
                 print(check)
-                simsock.sendto(udp.pack(type1=Type.WHOHAS.value, data=check.chunk_hash.encode(), ack=0, seq=0, sf=0), check.peer)
+                simsock.sendto(udp.pack(type1=Type.WHOHAS.value, data=check.chunk_hash.encode(), ack=0, seq=0, sf=0),
+                               check.peer)
                 check.request_time = now
 
 

@@ -12,10 +12,10 @@ class BtConfig:
         self.identity = args.i
         self.peers = []
         self.haschunks: Dict[str, bytes] = dict()
-        self.downloaded_chunks: Dict[str, bytes] = dict()
-        self.pending_chunks: List[str] = list()
+        # self.downloaded_chunks: Dict[str, bytes] = dict()
+        # self.pending_chunks: List[str] = list()
         # save downloaded chunks into chunk_output_file
-        self.chunk_output_file = ''
+        # self.chunk_output_file = ''
         self.verbose = args.v
         self.timeout = args.t
 

@@ -25,12 +25,12 @@ class PeerProc:
         self.send_record = dict() #{to_id:{type:cnt}}
         self.recv_record = dict() #{from_id:{type:cnt}}
         self.timeout = timeout
-        # stdout_filepath = f"log/peer_{self.id}.log"
-        # if os.path.exists(stdout_filepath):
-        #     os.remove(stdout_filepath)
-        # self.stdout = open(stdout_filepath, "w")
-        # self.stdout.write("GRADER: PeerProc {} created")
-        # self.stdout.flush()
+        stdout_filepath = f"log/peer_{self.id}.log"
+        if os.path.exists(stdout_filepath):
+            os.remove(stdout_filepath)
+        self.stdout = open(stdout_filepath, "w")
+        self.stdout.write("GRADER: PeerProc {} created")
+        self.stdout.flush()
 
 
     def start_peer(self):
@@ -39,7 +39,7 @@ class PeerProc:
         else:
             cmd = f"python3 -u {self.peer_file_loc} -p {self.node_map_loc} -c {self.haschunk_loc} -m {self.max_transmit} -i {self.id}"
 
-        self.process = subprocess.Popen(cmd.split(" "), stdin=subprocess.PIPE,stdout=subprocess.DEVNULL, text=True, bufsize=1, universal_newlines=True)
+        self.process = subprocess.Popen(cmd.split(" "), stdin=subprocess.PIPE,stdout=self.stdout,stderr=self.stdout, text=True, bufsize=1, universal_newlines=True)
         # ensure peer is running
         time.sleep(1)
 
@@ -65,8 +65,8 @@ class PeerProc:
 
     def terminate_peer(self):
         self.process.send_signal(signal.SIGINT)
-        # self.stdout.flush()
-        # self.stdout.close()
+        self.stdout.flush()
+        self.stdout.close()
         # self.process.terminate()
         self.process = None
 
@@ -144,6 +144,7 @@ class GradingSession:
             self.start_time = time.time()
             # start simulator
             cmd = f"perl util/hupsim.pl -m {self.topo} -n {self.nodes} -p {self.checkerPort} -v 3"
+            print(os.listdir())
             outfile = open("log/Checker.log", "w")
             simulator_process = subprocess.Popen(cmd.split(" "), stdin=subprocess.PIPE,stdout=outfile,stderr=outfile ,text=True, bufsize=1, universal_newlines=True)
             # ensure simulator starts
