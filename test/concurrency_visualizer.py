@@ -56,7 +56,7 @@ def analyze(file):
     plt.legend(list(sessions.keys()))
     plt.xlabel("Time Since Start (ms)")
     plt.ylabel("Stream")
-    plt.savefig("concurrency_analysis11.png")
+    plt.savefig("crash.png")
 
 
 if __name__ == "__main__":

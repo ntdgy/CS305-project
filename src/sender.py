@@ -135,8 +135,8 @@ class Sender(UDP):
         self.EstimatedRTT = 0.875 * self.EstimatedRTT + 0.125 * sampleRTT
         self.DevRTT = 0.75 * self.DevRTT + 0.25 * abs(sampleRTT - self.EstimatedRTT)
         self.TimeoutInterval = self.EstimatedRTT + 4 * self.DevRTT
-        if self.TimeoutInterval > 3:
-            self.TimeoutInterval = 3
+        if self.TimeoutInterval > 2:
+            self.TimeoutInterval = 2
 
     def switchCongestionStatus(self, event: Event):
         oldStatus = self.congestionStatus
@@ -145,8 +145,12 @@ class Sender(UDP):
             self.duplicateAck = 0
             if self.congestionStatus == CongestionStatus.SLOW_START:
                 self.cwnd += self.MSS
+                if self.ssthresh < 65536:
+                    self.ssthresh = min(self.ssthresh * 2, 65536)
             elif self.congestionStatus == CongestionStatus.CONGESTION_AVOIDANCE:
                 self.cwnd += self.MSS * self.MSS / self.cwnd
+                if self.ssthresh < 65536:
+                    self.ssthresh = min(self.ssthresh * 2, 65536)
             elif self.congestionStatus == CongestionStatus.FAST_RECOVERY:
                 self.cwnd = self.ssthresh
                 self.congestionStatus = CongestionStatus.CONGESTION_AVOIDANCE
