@@ -1,4 +1,3 @@
-from datetime import datetime
 import matplotlib.pyplot as plt
 
 with open("sender2.log", 'r') as f:
@@ -16,7 +15,7 @@ plt.figure()
 print(cwnd)
 start = float(cwnd[0][1])
 x = [float(i[1]) - start for i in cwnd]
-y = [float(i[0])/1300 for i in cwnd]
+y = [float(i[0]) for i in cwnd]
 plt.plot(x, y)
 plt.xlabel("Time Since Start (ms)")
 plt.ylabel("cwnd")
