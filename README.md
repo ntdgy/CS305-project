@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Set up your repo
 First, clone the repo from github and change the git remote tag::
 ```
@@ -184,4 +183,4 @@ Received chunkhash: 3b68110847941b84e8d05417a5b2609122a56314
 Successful received: True
 Congrats! You have completed the example!
 ```
->>>>>>> sb305/main
+
